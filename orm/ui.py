@@ -176,7 +176,7 @@ class UI:
         def run_action():
             try: 
                 print("Index: {}\nAction: {}".format(action_index, self.history_actions[action_index]))
-                # TODO: Add result label.
+                # TODO [1]: Add result label.
                 # self.executeAction(self.history_actions[action_index])
             except Exception as e:
                 print("Exception: {}".format(e))
@@ -195,6 +195,7 @@ class UI:
 
         selected_option = tk.StringVar()
         selected_option.set(action.action_type)
+        # TODO [2]: Add command to update the option blurring based on the selected value in the menu.
         option_menu = tk.OptionMenu(history_tab, selected_option, *options)
         option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
     
@@ -205,24 +206,25 @@ class UI:
         name_entry = self.Entry(master=history_tab)
         name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
         name_entry.insert(tk.END, action.name) # Fill data
-        if action.needName(): # Then check if I need to disable the entry
+        if not action.needName(): # Then check if I need to disable the entry
             name_entry.config(state="readonly")
         
         # CSS Selector column
         css_selector_entry = self.Entry(master=history_tab)
         css_selector_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
         css_selector_entry.insert(tk.END, action.css) # Fill data
-        if action.needCSS(): # Then check if I need to disable the entry
+        if not action.needCSS(): # Then check if I need to disable the entry
             css_selector_entry.config(state="readonly")
 
         # Value column
         value_entry = self.Entry(master=history_tab)
         value_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
         value_entry.insert(tk.END, action.value) # Fill data
-        if action.needValue(): # Then check if I need to disable the entry
+        if not action.needValue(): # Then check if I need to disable the entry
             value_entry.config(state="readonly")
 
         # Replay button column
+        # TODO [4]: Enable remove line option.
         remove_button = tk.Button(master=history_tab, text="Remove", anchor=tk.W)
         remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
     
@@ -263,7 +265,6 @@ class UI:
             # 
             # def run_action(i = i):
             #     try: 
-            #         # TODO: Add result label.
             #         self.executeAction(self.history_actions[i])
             #     except Exception as e:
             #         print("Exception: {}".format(e))
@@ -282,6 +283,7 @@ class UI:
             # In __addHistoryActionRow, I accidentally lock the i value without knowing :3
             self.__addHistoryActionRow(action=self.history_actions[i], action_index=i)
 
+        # TODO [3]: - Add save(export)/import option for the Actions History tab.
         self.tab_control.add(child=history_tab, text="Actions History")
 
 
@@ -439,8 +441,19 @@ class UI:
     # Performing simple action on the selenium driver (bot windows)
     def __submitButtonPressed(self) -> None:
         result_label = self.result_labels[RESULT_KEY]
-        action = self.__gatherSubmittedData()
-        self.history_actions.append(action)
+        
+        action : Action
+        try:
+            action = self.__gatherSubmittedData()
+        except Exception as e:
+            # Update the result label with error if there's an error
+            result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
+            return
+
+        action_index : int = 0
+        if action.needToStore():
+            action_index = len(self.history_actions)
+            self.history_actions.append(action)
 
         result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
 
@@ -453,6 +466,9 @@ class UI:
             else:
                 # Else, mark it as done.
                 result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
+            finally:
+                if action.needToStore():
+                    self.__addHistoryActionRow(action=action, action_index=action_index)
         
         # Put the long process of the browser trying to do stuff in the thread. 
         execution_thread = threading.Thread(target=__processAction)

@@ -1,4 +1,4 @@
-GUI_SIZE = "700x500"
+GUI_SIZE = "750x500"
 
 # List of key to map from key --> tk object.
 ################################################

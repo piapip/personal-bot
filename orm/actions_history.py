@@ -40,7 +40,8 @@ class Action:
     
         Currently, the ClickBySelector action and ClickByValue needs this data.
         """
-        return self.action_type == ActionType.CLICK_BY_SELECTOR or self.action_type == ActionType.CLICK_BY_VALUE
+        return (self.action_type == ActionType.CLICK_BY_SELECTOR or 
+                self.action_type == ActionType.CLICK_BY_VALUE)
     
 
     def needValue(self) -> bool:
@@ -61,3 +62,12 @@ class Action:
         return self.action_type == ActionType.SWITCH_TAB
 
 
+    def needToStore(self) -> bool:
+        """
+        needToStore tell us if we need to track the executed action or not.
+        True is we need to.
+        False is we don't need to.
+        """
+        return (self.action_type == ActionType.CLICK_BY_NAME or
+                self.action_type == ActionType.CLICK_BY_SELECTOR or
+                self.action_type == ActionType.CLICK_BY_VALUE)
