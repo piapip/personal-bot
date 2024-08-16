@@ -5,12 +5,15 @@ from configs.ui_configs import (
     GUI_SIZE,
     ACTION_TAB_KEY,
     HISTORY_TAB_KEY,
+    HISTORY_TABLE_KEY,
     NAME_ENTRY_KEY,
     CSS_SELECTOR_ENTRY_KEY,
     VALUE_ENTRY_KEY,
     TAB_INDEX_KEY,
     ACTION_OPTION_BOX_KEY,
-    RESULT_KEY,
+    SINGLE_ACTION_RESULT_KEY,
+    HISTORY_ACTION_RESULT_KEY,
+    FOOTER_GRID_ROW,
     ResultText,
     HISTORY_TABLE_KEY,
     EXECUTE_BUTTON_KEY,
@@ -45,6 +48,21 @@ class UI:
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
         self.history_actions: list[Action] = [
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
@@ -158,7 +176,7 @@ class UI:
         
         result_label = tk.Label(master=action_tab, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
         result_label.pack(padx=10, pady=10, fill="x")
-        self.result_labels[RESULT_KEY] = result_label
+        self.result_labels[SINGLE_ACTION_RESULT_KEY] = result_label
 
         # Add the submit button to run the Automation on the browser (aka driver).
         submit_button = tk.Button(master=action_tab, text="Execute", command=self.__submitButtonPressed)
@@ -172,18 +190,40 @@ class UI:
         """__addHistoryActionRow render the rows to represent
         the executed action on the Actions History table.
         """
-        history_tab = self.frames[HISTORY_TAB_KEY]
-        def run_action():
-            try: 
-                print("Index: {}\nAction: {}".format(action_index, self.history_actions[action_index]))
-                # TODO [1]: Add result label.
-                # self.executeAction(self.history_actions[action_index])
-            except Exception as e:
-                print("Exception: {}".format(e))
+        history_table = self.frames[HISTORY_TABLE_KEY]
+
+        replay_button = tk.Button(master=history_table, text="Run", anchor=tk.W)
+        replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
+
+        def __retriggerHistoryAction(replay_button=replay_button) -> None:
+            """__retriggerHistoryAction triggered the action that was executed from the past.
+            """
+            result_label = self.result_labels[HISTORY_ACTION_RESULT_KEY]
+
+            # Block the execute button to prevent double clicking.
+            replay_button.config(state="disabled")
+            
+            # Update the result bar to yellow hinting that it's running. 
+            result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
+
+            def __processHistoryAction():
+                try:
+                    self.executeAction(action)
+                except Exception as e:
+                    # Update the result label with error if there's an error
+                    result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
+                else:
+                    # Else, mark it as done.
+                    result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
+                finally:
+                    replay_button.config(state="normal")
+
+            # Put the long process of the browser trying to do stuff in the thread. 
+            execution_thread = threading.Thread(target=__processHistoryAction)
+            execution_thread.start()
 
         # Replay button column
-        replay_button = tk.Button(master=history_tab, text="Run", anchor=tk.W, command=run_action)
-        replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
+        replay_button.config(command=__retriggerHistoryAction)
 
         # Action column
         options=(
@@ -196,28 +236,25 @@ class UI:
         selected_option = tk.StringVar()
         selected_option.set(action.action_type)
         # TODO [2]: Add command to update the option blurring based on the selected value in the menu.
-        option_menu = tk.OptionMenu(history_tab, selected_option, *options)
+        option_menu = tk.OptionMenu(history_table, selected_option, *options)
         option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
     
-        # action_label = tk.Label(master=history_tab, anchor=tk.W, text=action.action_type)
-        # action_label.grid(row=i+1, column=1, sticky=tk.W+tk.E, padx=10, pady=4)
-        
         # Name column
-        name_entry = self.Entry(master=history_tab)
+        name_entry = self.Entry(master=history_table)
         name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
         name_entry.insert(tk.END, action.name) # Fill data
         if not action.needName(): # Then check if I need to disable the entry
             name_entry.config(state="readonly")
         
         # CSS Selector column
-        css_selector_entry = self.Entry(master=history_tab)
+        css_selector_entry = self.Entry(master=history_table)
         css_selector_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
         css_selector_entry.insert(tk.END, action.css) # Fill data
         if not action.needCSS(): # Then check if I need to disable the entry
             css_selector_entry.config(state="readonly")
 
         # Value column
-        value_entry = self.Entry(master=history_tab)
+        value_entry = self.Entry(master=history_table)
         value_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
         value_entry.insert(tk.END, action.value) # Fill data
         if not action.needValue(): # Then check if I need to disable the entry
@@ -225,7 +262,7 @@ class UI:
 
         # Replay button column
         # TODO [4]: Enable remove line option.
-        remove_button = tk.Button(master=history_tab, text="Remove", anchor=tk.W)
+        remove_button = tk.Button(master=history_table, text="Remove", anchor=tk.W)
         remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
     
 
@@ -237,27 +274,54 @@ class UI:
         history_tab = ttk.Frame(master=self.tab_control)
         self.frames[HISTORY_TAB_KEY] = history_tab
 
-        history_tab.pack(padx=10, pady=10, fill=tk.X)
-        history_tab.columnconfigure(index=0, weight=1, uniform="tag")
-        history_tab.columnconfigure(index=1, weight=3, uniform="tag")
-        history_tab.columnconfigure(index=2, weight=3, uniform="tag")
-        history_tab.columnconfigure(index=3, weight=3, uniform="tag")
-        history_tab.columnconfigure(index=4, weight=3, uniform="tag")
-        history_tab.columnconfigure(index=5, weight=2, uniform="tag")
+        # Outer grid: 2 column: 1 for the big canvas, 1 for the scrollbar.
+        main_canvas = tk.Canvas(master=history_tab)
+        main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Link a scrollbar to the canvas.
+        vertical_scroll_bar = tk.Scrollbar(master=history_tab, orient=tk.VERTICAL, command=main_canvas.yview)
+        vertical_scroll_bar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        main_canvas.configure(yscrollcommand=vertical_scroll_bar.set)
+        
+        # The actual frame that contains the history that we'll work with mainly.
+        history_table_frame = ttk.Frame(master=main_canvas)
+        canvas_frame = main_canvas.create_window((0, 0), window=history_table_frame, anchor=tk.N+tk.W)
+
+        # Events to make the table scale with the window's resizing. 
+        def updateCanvansFrameWidth(event: tk.Event):
+            canvas_width = event.width
+            main_canvas.itemconfig(canvas_frame, width=canvas_width)
+
+        def onFrameConfigure(event: tk.Event):
+            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+
+        history_table_frame.bind("<Configure>", onFrameConfigure)
+        main_canvas.bind("<Configure>", updateCanvansFrameWidth)
+
+        self.frames[HISTORY_TABLE_KEY] = history_table_frame
+
+        class Header:
+            def __init__(self, text: str, weight: int) -> None:
+                self.text = text
+                self.weight = weight
+
+        headers: list[Header] = [
+            Header(text="", weight=1),                # Column for the play button.
+            Header(text="Action", weight=1),          # Column for the action.
+            Header(text="Name", weight=4),            #
+            Header(text="CSS Selector", weight=4),    #
+            Header(text="Value", weight=4),           #
+            Header(text="", weight=1),                # Column for the Remove button.
+        ]
 
         # Render the table header.
-        # Play button column.
-        tk.Label(master=history_tab, text="", anchor="w").grid(row=0, column=0, sticky=tk.E + tk.W)
-        tk.Label(master=history_tab, text="Action", anchor="w").grid(row=0, column=1, sticky=tk.E + tk.W)
-        tk.Label(master=history_tab, text="Name", anchor="w").grid(row=0, column=2, sticky=tk.E + tk.W)
-        tk.Label(master=history_tab, text="CSS Selector", anchor="w").grid(row=0, column=3, sticky=tk.E + tk.W)
-        tk.Label(master=history_tab, text="Value", anchor="w").grid(row=0, column=4, sticky=tk.E + tk.W)
-        tk.Label(master=history_tab, text="", anchor="w").grid(row=0, column=5, sticky=tk.E + tk.W)
-
-        # CSS Selector button column.
-
-        # Value button column 
-
+        for i in range(len(headers)):
+            header = headers[i]
+            history_table_frame.grid_columnconfigure(index=i, weight=header.weight)
+            tk.Label(master=history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
+        
+        # Render the list of the actions to the table.
         for i in range(len(self.history_actions)):
             # Closure problem with python.
             # If I ever need to lock this i value, like how Go used to do "i:=i"
@@ -280,9 +344,23 @@ class UI:
             # Go is fine with this value locking, but not Python.
             # (Go lock by make a new reference pointing taking the same value, by reinitiating the variable using ":=")
             # 
-            # In __addHistoryActionRow, I accidentally lock the i value without knowing :3
+            # By calling __addHistoryActionRow with all the parameter name defined,
+            # I accidentally lock the i value without knowing :3
             self.__addHistoryActionRow(action=self.history_actions[i], action_index=i)
 
+        result_label = tk.Label(master=history_table_frame, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
+        result_label.grid(pady=10, column=0, row=FOOTER_GRID_ROW, columnspan=len(headers), sticky=tk.E + tk.W)
+        self.result_labels[HISTORY_ACTION_RESULT_KEY] = result_label
+
+        # history_table_frame.update_idletasks()
+        # main_canvas.update_idletasks()
+
+        # self.root.update_idletasks()
+        # history_table_frame.update_idletasks()
+        # main_canvas.update_idletasks()
+
+        # print("main canvas width: {}".format(main_canvas.winfo_width()))
+        
         # TODO [3]: - Add save(export)/import option for the Actions History tab.
         self.tab_control.add(child=history_tab, text="Actions History")
 
@@ -313,7 +391,6 @@ class UI:
             event_button: tk.Entry = event.widget
             event_button.delete(0, tk.END)
             event_button.unbind('<FocusIn>')
-
 
         entry.insert(index=0, string=default_text)
         entry.bind(sequence='<FocusIn>', func=clear_default)
@@ -411,36 +488,45 @@ class UI:
 
         sleep(1.5)
 
-        match action.action_type:
-            case ActionType.CLICK_BY_NAME:
-                if action.name == "":
-                    raise Exception("name is expected for the Click by Name action")
-                else:
-                    self.driver.clickByName(name=action.name)
-            case ActionType.CLICK_BY_SELECTOR:
-                css_selector = action.css
-                
-                if css_selector == "":
-                    raise Exception("css_selector is expected for the Click by CSS action")
-                else:
-                    self.driver.clickByCSS(selector=css_selector)
-            case ActionType.CLICK_BY_VALUE:
-                css_selector = action.css
-                value = action.value
-                
-                if css_selector == "" or value == "":
-                    raise Exception("css_selector and value are expected for the Click by Value action")
-                else:
-                    self.driver.clickByValue(selector=css_selector, value=value)
-                
-            case ActionType.SWITCH_TAB:
-                self.driver.switchTab(tab_index=action.tab_index)
+        try:
+            match action.action_type:
+                case ActionType.CLICK_BY_NAME:
+                    raise Exception("forced fail")
+                    # if action.name == "":
+                    #     raise Exception("name is expected for the Click by Name action")
+                    # else:
+                    #     self.driver.clickByName(name=action.name)
+                case ActionType.CLICK_BY_SELECTOR:
+                    css_selector = action.css
+                    
+                    if css_selector == "":
+                        raise Exception("css_selector is expected for the Click by CSS action")
+                    else:
+                        self.driver.clickByCSS(selector=css_selector)
+                case ActionType.CLICK_BY_VALUE:
+                    css_selector = action.css
+                    value = action.value
+                    
+                    if css_selector == "" or value == "":
+                        raise Exception("css_selector and value are expected for the Click by Value action")
+                    else:
+                        self.driver.clickByValue(selector=css_selector, value=value)
+                    
+                case ActionType.SWITCH_TAB:
+                    self.driver.switchTab(tab_index=action.tab_index)
+        except Exception as e:
+            action.failed_reason = "{}".format(e)
+            raise e
+        finally:
+            print("executed: {}".format(action))
         
+        # If the action reaches to the end without any problem, then mark it as successful.
+        action.failed_reason = ""
     
     # __submitButtonPressed contains the logic when we submit the data for the "Actions" tab.
     # Performing simple action on the selenium driver (bot windows)
     def __submitButtonPressed(self) -> None:
-        result_label = self.result_labels[RESULT_KEY]
+        result_label = self.result_labels[SINGLE_ACTION_RESULT_KEY]
         
         action : Action
         try:
@@ -455,7 +541,12 @@ class UI:
             action_index = len(self.history_actions)
             self.history_actions.append(action)
 
+        # Update the result bar to yellow hinting that it's running. 
         result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
+
+        # Block the execute button to prevent double clicking.
+        submit_button = self.buttons[EXECUTE_BUTTON_KEY]
+        submit_button.config(state="disabled")
 
         def __processAction(action=action):
             try:
@@ -467,6 +558,7 @@ class UI:
                 # Else, mark it as done.
                 result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
             finally:
+                submit_button.config(state="normal")
                 if action.needToStore():
                     self.__addHistoryActionRow(action=action, action_index=action_index)
         

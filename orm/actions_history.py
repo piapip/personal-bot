@@ -14,20 +14,22 @@ class Action:
         self.css = css
         self.value = value
         self.tab_index = tab_index
+        self.failed_reason = ""
 
     
     def __str__(self) -> str:
-        return "Action: {}\nName: {}\nCSS: {}\nValue: {}\n".format(
+        return "Action: {}\nName: {}\nCSS: {}\nValue: {}\nError: {}\n".format(
             self.action_type,
             self.name,
             self.css,
             self.value,
+            self.failed_reason,
         )
     
     
     def needName(self) -> bool:
         """
-        needName tell us if the current action needs Name or not.
+        needName tells us if the current action needs Name or not.
         
         Currently, only the ClickByName action needs this data.
         """
@@ -36,7 +38,7 @@ class Action:
 
     def needCSS(self) -> bool:
         """
-        needCSS tell us if the current action needs CSS or not.
+        needCSS tells us if the current action needs CSS or not.
     
         Currently, the ClickBySelector action and ClickByValue needs this data.
         """
@@ -46,7 +48,7 @@ class Action:
 
     def needValue(self) -> bool:
         """
-        needValue tell us if the current action needs Value or not.
+        needValue tells us if the current action needs Value or not.
         
         Currently, only the ClickByValue action needs this data.
         """
@@ -55,7 +57,7 @@ class Action:
 
     def needTabIndex(self) -> bool:
         """
-        needTabIndex tell us if the current action needs tab_index or not.
+        needTabIndex tells us if the current action needs tab_index or not.
     
         Currently, only the SwitchTab action needs this data.
         """
@@ -64,10 +66,18 @@ class Action:
 
     def needToStore(self) -> bool:
         """
-        needToStore tell us if we need to track the executed action or not.
+        needToStore tells us if we need to track the executed action or not.
         True is we need to.
         False is we don't need to.
         """
         return (self.action_type == ActionType.CLICK_BY_NAME or
                 self.action_type == ActionType.CLICK_BY_SELECTOR or
                 self.action_type == ActionType.CLICK_BY_VALUE)
+
+
+    def hasError(self) -> bool:
+        """
+        hasError tells us if the last attempt is 
+        a successful attempt or a failed attempt. 
+        """
+        return self.failed_reason == ""
