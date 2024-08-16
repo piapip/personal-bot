@@ -1,0 +1,6 @@
+Lib
+Scripts
+Include
+junk
+__pycache__
+pyvenv.cfg
