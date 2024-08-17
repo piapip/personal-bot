@@ -9,7 +9,17 @@ class ActionType(StrEnum):
 
 class Action:
     def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
-        self.__id: UUID = uuid4()
+        # This __id will be used for differentiating rows.
+        # The Actions History tab's remove button performs removal by value.
+        # So in case if there are 2 actions with identical values,
+        # the first one in the history will be removed instead of the targeted action.
+        # This may cause unexpected behavior later.
+        # To prevent that, add the uuid for each row as the just-in-case solution.
+        # 
+        # Hmmm still, even if the 2 actions have the same content,
+        # it seems like they are not truly similar because they are referred by different pointer.
+        # So python remove function is actually smart enough to differentiate between the two without the need of the __id.
+        # self.__id: UUID = uuid4()
         self.action_type: ActionType = action_type
         self.name: str = name
         self.css: str = css
