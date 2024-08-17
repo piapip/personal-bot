@@ -1,5 +1,3 @@
-[2] Add blurring behavior when updating Action for the Actions History tab.
-
 [3] Add save(export)/import option for the Actions History tab.
 
 [4] Enable the remove line option.
@@ -7,3 +5,6 @@
 [5] Hit critical performance issue when there are multiple history actions.
 
 [6] Add rolling bind.
+
+[7] The error box is displaying the entire stack trace sometimes.
+    Don't do that.

@@ -9,12 +9,12 @@ class ActionType(StrEnum):
 
 class Action:
     def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
-        self.action_type = action_type
-        self.name = name
-        self.css = css
-        self.value = value
-        self.tab_index = tab_index
-        self.failed_reason = ""
+        self.action_type: ActionType = action_type
+        self.name: str = name
+        self.css: str = css
+        self.value: str = value
+        self.tab_index: int = tab_index
+        self.failed_reason: str = ""
 
     
     def __str__(self) -> str:

@@ -51,21 +51,21 @@ class UI:
             Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
         ]
 
         tab_control = ttk.Notebook(master=self.root)
@@ -130,7 +130,7 @@ class UI:
         # Remember the entry to extract the data from this entry later.
         self.selected_option_boxes[ACTION_OPTION_BOX_KEY] = ""
 
-        def updateSelectedOption(selection):
+        def updateSelectedOption(selection: str):
             self.selected_option_boxes[ACTION_OPTION_BOX_KEY] = selection
             self.__optionBoxRerender()
 
@@ -177,50 +177,6 @@ class UI:
 
         replay_button = tk.Button(master=history_table, text="Run", anchor=tk.W)
         replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
-
-        def __retriggerHistoryAction(replay_button=replay_button) -> None:
-            """__retriggerHistoryAction triggered the action that was executed from the past.
-            """
-            result_label = self.result_labels[HISTORY_ACTION_RESULT_KEY]
-
-            # Block the execute button to prevent double clicking.
-            replay_button.config(state="disabled")
-            
-            # Update the result bar to yellow hinting that it's running. 
-            result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
-
-            def __processHistoryAction():
-                try:
-                    self.executeAction(action)
-                except Exception as e:
-                    # Update the result label with error if there's an error
-                    result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
-                else:
-                    # Else, mark it as done.
-                    result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
-                finally:
-                    replay_button.config(state="normal")
-
-            # Put the long process of the browser trying to do stuff in the thread. 
-            execution_thread = threading.Thread(target=__processHistoryAction)
-            execution_thread.start()
-
-        # Replay button column
-        replay_button.config(command=__retriggerHistoryAction)
-
-        # Action column
-        options=(
-            ActionType.CLICK_BY_NAME,
-            ActionType.CLICK_BY_SELECTOR,
-            ActionType.CLICK_BY_VALUE,
-            # ActionType.SWITCH_TAB,
-        )
-
-        selected_option = tk.StringVar()
-        selected_option.set(action.action_type)
-        # TODO [2]: Add command to update the option blurring based on the selected value in the menu.
-        option_menu = tk.OptionMenu(history_table, selected_option, *options)
-        option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
     
         # Name column
         name_entry = self.Entry(master=history_table)
@@ -243,6 +199,78 @@ class UI:
         if not action.needValue(): # Then check if I need to disable the entry
             value_entry.config(state="readonly")
 
+        def __retriggerHistoryAction(replay_button=replay_button) -> None:
+            """__retriggerHistoryAction triggered the action that was executed from the past.
+            It will also save the retrigger attempt as the latest version in the history.
+            """
+            result_label = self.result_labels[HISTORY_ACTION_RESULT_KEY]
+            action.name = name_entry.get()
+            action.css = css_selector_entry.get()
+            action.value = value_entry.get()
+            action.failed_reason = "" # Reset the previous attempt's failed reason as well.
+
+            # Block the execute button to prevent double clicking.
+            replay_button.config(state="disabled")
+            
+            # Update the result bar to yellow hinting that it's running. 
+            result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
+
+            def __processHistoryAction():
+                try:
+                    self.executeAction(action)
+                except Exception as e:
+                    # Update the result label with error if there's an error
+                    result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
+                else:
+                    # Else, mark it as done.
+                    result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
+                finally:
+                    replay_button.config(state="normal")
+                    print("stored action: {}".format(self.history_actions[action_index]))
+
+            # Put the long process of the browser trying to do stuff in the thread. 
+            execution_thread = threading.Thread(target=__processHistoryAction)
+            execution_thread.start()
+
+        # Replay button column
+        replay_button.config(command=__retriggerHistoryAction)
+
+        def onUpdateHistoryActionType(action_type: str):
+            """onUpdateHistoryActionType updates the history action's action_type
+            and re-render the data blurring."""
+            action.action_type = action_type
+
+            # Disable all the entries of the row.
+            name_entry.config(state="readonly")
+            css_selector_entry.config(state="readonly")
+            value_entry.config(state="readonly")
+
+            # Then enable those that are required for the action type.
+            match action_type:
+                case ActionType.CLICK_BY_NAME:
+                    name_entry.configure(state="normal", background="white")
+                case ActionType.CLICK_BY_SELECTOR:
+                    css_selector_entry.configure(state="normal", background="white")
+                case ActionType.CLICK_BY_VALUE:
+                    css_selector_entry.configure(state="normal", background="white")
+                    value_entry.configure(state="normal", background="white")
+        
+        # Action column.
+        # Even though, action column appears before the other entry columns,
+        # due to the technical limitation that prevent us from updating the OptionBox's command,
+        # I have to create the OptionBox last, because the command on update relies on having other columns initiated first.
+        options=(
+            ActionType.CLICK_BY_NAME,
+            ActionType.CLICK_BY_SELECTOR,
+            ActionType.CLICK_BY_VALUE,
+            # ActionType.SWITCH_TAB,
+        )
+
+        selected_option = tk.StringVar()
+        selected_option.set(action.action_type)
+        option_menu = tk.OptionMenu(history_table, selected_option, *options, command=onUpdateHistoryActionType)
+        option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
+            
         # Replay button column
         # TODO [4]: Enable remove line option.
         remove_button = tk.Button(master=history_table, text="Remove", anchor=tk.W)
@@ -339,7 +367,7 @@ class UI:
         self.tab_control.add(child=history_tab, text="Actions History")
 
 
-    def __disableAllEntries(self) -> None:
+    def __disableAllEntriesActionsTab(self) -> None:
         """__disableAllEntries clears all the entries of the Actions tab
         and converts them to readonly mode.
         """
@@ -349,9 +377,9 @@ class UI:
             entry.configure(state="readonly", background="grey")
 
 
-    # __enableInputOptions changes the state of the entries to normal.
+    # __enableInputOptionsActionsTab changes the state of the entries to normal.
     # If the entry currently doesn't have any data, fill in some default message.
-    def __enableInputOptions(self, answer_label: str, default_text: str) -> None:
+    def __enableInputOptionsActionsTab(self, answer_label: str, default_text: str) -> None:
         entry = self.entries[answer_label]
         entry.configure(state="normal", background="white")
 
@@ -365,42 +393,38 @@ class UI:
         entry.bind(sequence='<FocusIn>', func=clear_default)
 
 
-    def __enableSwitchTabOptions(self) -> None:
-        tab_count = self.driver.countTabs()
-        if tab_count == None or tab_count == 0:
-            self.__enableInputOptions(TAB_INDEX_KEY, "No tab")
-        else:
-            self.__enableInputOptions(TAB_INDEX_KEY, "[0-{}]".format(tab_count - 1))
-
-
-    # __optionBoxRerender re-renders the entire UI when the Action option is changed. 
+    # __optionBoxRerender re-renders the entire "Actions" tab when the "Actions" dropdown is changed. 
     def __optionBoxRerender(self) -> None:
         selected_action = self.selected_option_boxes[ACTION_OPTION_BOX_KEY]
-        self.__disableAllEntries()
+        self.__disableAllEntriesActionsTab()
 
         match selected_action:
             case ActionType.CLICK_BY_NAME:
                 # For the "ClickByName" ActionType.
                 # Affected inputs are:
                 # - Name
-                self.__enableInputOptions(answer_label=NAME_ENTRY_KEY, default_text="Input name please")
+                self.__enableInputOptionsActionsTab(answer_label=NAME_ENTRY_KEY, default_text="Input name please")
             case ActionType.CLICK_BY_SELECTOR:
                 # For the "ClickByCSS" ActionType.
                 # Affected inputs are:
                 # - CSS_Selector
-                self.__enableInputOptions(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
+                self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
             case ActionType.CLICK_BY_VALUE:
                 # For the "ClickByValue" ActionType.
                 # Affected inputs are:
                 # - CSS_Selector
                 # - Value
-                self.__enableInputOptions(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
-                self.__enableInputOptions(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
+                self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
+                self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
             case ActionType.SWITCH_TAB:
                 # For the "SwitchTab" ActionType.
                 # Affected inputs are:
                 # - TabIndex
-                self.__enableSwitchTabOptions()
+                tab_count = self.driver.countTabs()
+                if tab_count == None or tab_count == 0:
+                    self.__enableInputOptionsActionsTab(TAB_INDEX_KEY, "No tab")
+                else:
+                    self.__enableInputOptionsActionsTab(TAB_INDEX_KEY, "[0-{}]".format(tab_count - 1))
 
     
     # __gatherSubmittedData aggregates all the data given via the "Actions" tab into 1 Action.
@@ -486,8 +510,8 @@ class UI:
         except Exception as e:
             action.failed_reason = "{}".format(e)
             raise e
-        # finally:
-        #     print("executed: {}".format(action))
+        finally:
+            print("executed: {}".format(action))
         
         # If the action reaches to the end without any problem, then mark it as successful.
         action.failed_reason = ""
