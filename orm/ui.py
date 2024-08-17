@@ -79,28 +79,11 @@ class UI:
         self.__renderHistoryActionsTab()
         
         tab_control.select(self.frames[HISTORY_TAB_KEY])
-        
-
-        
-        
-        # # self.app.startTab("History")
-        # # self.__renderHistoryTab()
-        # # self.app.stopTab()
-
-        # # self.app.stopTabbedFrame()
 
     
     def Entry(self, master: tk.Frame) -> ttk.Entry:
         return ttk.Entry(master=master, style="pad.TEntry")
     
-
-    def show_message(self):
-        print("Name: ", self.entries[NAME_ENTRY_KEY].get())
-        print("CSS Selector: ", self.entries[CSS_SELECTOR_ENTRY_KEY].get())
-        print("Value: ", self.entries[VALUE_ENTRY_KEY].get())
-        print("Tab Index: ", self.entries[TAB_INDEX_KEY].get())
-        print("Selected action", self.selected_option_boxes[ACTION_OPTION_BOX_KEY])
-
 
     def addTextInput(self, master_label:str, answer_label:str, text:str, disabled:bool):
         master = self.frames[master_label]
@@ -351,23 +334,9 @@ class UI:
         result_label = tk.Label(master=history_table_frame, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
         result_label.grid(pady=10, column=0, row=FOOTER_GRID_ROW, columnspan=len(headers), sticky=tk.E + tk.W)
         self.result_labels[HISTORY_ACTION_RESULT_KEY] = result_label
-
-        # history_table_frame.update_idletasks()
-        # main_canvas.update_idletasks()
-
-        # self.root.update_idletasks()
-        # history_table_frame.update_idletasks()
-        # main_canvas.update_idletasks()
-
-        # print("main canvas width: {}".format(main_canvas.winfo_width()))
         
         # TODO [3]: - Add save(export)/import option for the Actions History tab.
         self.tab_control.add(child=history_tab, text="Actions History")
-
-
-    def __history_action_repeat(self, row: int):
-        data = self.app.getTableRow(title=HISTORY_TABLE_KEY, rowNumber=row)
-        print("got data: ", data)
 
 
     def __disableAllEntries(self) -> None:
@@ -491,11 +460,11 @@ class UI:
         try:
             match action.action_type:
                 case ActionType.CLICK_BY_NAME:
-                    raise Exception("forced fail")
-                    # if action.name == "":
-                    #     raise Exception("name is expected for the Click by Name action")
-                    # else:
-                    #     self.driver.clickByName(name=action.name)
+                    # raise Exception("forced fail")
+                    if action.name == "":
+                        raise Exception("name is expected for the Click by Name action")
+                    else:
+                        self.driver.clickByName(name=action.name)
                 case ActionType.CLICK_BY_SELECTOR:
                     css_selector = action.css
                     
@@ -517,8 +486,8 @@ class UI:
         except Exception as e:
             action.failed_reason = "{}".format(e)
             raise e
-        finally:
-            print("executed: {}".format(action))
+        # finally:
+        #     print("executed: {}".format(action))
         
         # If the action reaches to the end without any problem, then mark it as successful.
         action.failed_reason = ""
