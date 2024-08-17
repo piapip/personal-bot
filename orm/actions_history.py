@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import List
+from uuid import uuid4, UUID
 
 class ActionType(StrEnum):
     CLICK_BY_NAME = "Click by name"
@@ -9,6 +9,7 @@ class ActionType(StrEnum):
 
 class Action:
     def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
+        self.__id: UUID = uuid4()
         self.action_type: ActionType = action_type
         self.name: str = name
         self.css: str = css

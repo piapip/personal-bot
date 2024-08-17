@@ -1,7 +1,5 @@
 [3] Add save(export)/import option for the Actions History tab.
 
-[4] Enable the remove line option.
-
 [5] Hit critical performance issue when there are multiple history actions.
 
 [6] Add rolling bind.

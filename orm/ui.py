@@ -51,9 +51,9 @@ class UI:
             Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
@@ -271,10 +271,31 @@ class UI:
         option_menu = tk.OptionMenu(history_table, selected_option, *options, command=onUpdateHistoryActionType)
         option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
             
-        # Replay button column
-        # TODO [4]: Enable remove line option.
+        # Remove button column
         remove_button = tk.Button(master=history_table, text="Remove", anchor=tk.W)
         remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
+
+        def delete_row() -> None:
+            """remove_row deletes the row in the Actions History and remove it from the saved data.
+            """
+            # TODO: Put all of this under a frame or smt.
+            # Like a widget, so if I want to delete the entire row,
+            # I just need to call 1 "row.destroy()" instead of component one by one.
+            # Though I don't hate this one by one, more customization.
+            # Also, I designed on the fly, so customization is way more important than cleanliness for now. :3
+        
+            # Destroy all the widgets in the row.
+            replay_button.destroy()
+            option_menu.destroy()
+            name_entry.destroy()
+            css_selector_entry.destroy()
+            value_entry.destroy()
+            remove_button.destroy()
+
+            # Remove the action from the history.
+            self.history_actions.remove(action)
+        
+        remove_button.config(command=delete_row)
     
 
     def __renderHistoryActionsTab(self) -> None:
