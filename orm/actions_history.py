@@ -11,7 +11,7 @@ class ActionType(StrEnum):
 class Action:
     def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
         # This __id will be used for differentiating rows.
-        # The Actions History tab's remove button performs removal by value.
+        # The History tab's remove button performs removal by value.
         # So in case if there are 2 actions with identical values,
         # the first one in the history will be removed instead of the targeted action.
         # This may cause unexpected behavior later.

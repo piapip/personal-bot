@@ -148,7 +148,7 @@ class HistoryActionRow:
 
 
     def __delete(self) -> None:
-        """delete deletes the row in the Actions History and remove it from the saved data.
+        """__delete deletes the row in the History and remove it from the saved data.
         """
         # TODO: Put all of this under a frame or smt.
         # Like a widget, so if I want to delete the entire row,

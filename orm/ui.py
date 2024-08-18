@@ -1,4 +1,4 @@
-from tkinter import Tk, ttk, messagebox 
+from tkinter import Tk, ttk, simpledialog 
 import tkinter as tk
 from typing import Dict
 import threading
@@ -9,6 +9,7 @@ from configs.ui_configs import (
     GUI_SIZE,
     ACTION_TAB_KEY,
     HISTORY_TAB_KEY,
+    TEMPLATE_TAB_KEY,
     NAME_ENTRY_KEY,
     CSS_SELECTOR_ENTRY_KEY,
     VALUE_ENTRY_KEY,
@@ -87,9 +88,12 @@ class UI:
         self.__renderActionTab()
         
         # Tab 2 for the history
-        self.__renderHistoryActionsTab()
+        self.__renderHistoryTab()
+
+        # Tab 3 for the templates for repetitive automation.
+        self.__renderTemplateTab()
         
-        tab_control.select(self.frames[HISTORY_TAB_KEY])
+        tab_control.select(self.frames[TEMPLATE_TAB_KEY])
     
 
     def addTextInput(self, master_label:str, answer_label:str, text:str, disabled:bool):
@@ -175,7 +179,7 @@ class UI:
         
         self.tab_control.add(child=action_tab, text="Actions")
 
-    # __renderHistoryActionsTab generates the tab containing 
+    # __renderHistoryTab generates the tab containing 
     # all the actions that were executed in the "Actions" tab.
     # Process:
     # 1. Initiate the main frame including:
@@ -185,7 +189,7 @@ class UI:
     # 2. Fill in the table data.
     #    2.1. Start with the header.
     #    2.2. Fill up the actions.
-    def __renderHistoryActionsTab(self) -> None:        
+    def __renderHistoryTab(self) -> None:        
         history_tab = ttk.Frame(master=self.tab_control)
         self.frames[HISTORY_TAB_KEY] = history_tab
 
@@ -202,7 +206,7 @@ class UI:
         self.result_labels[HISTORY_ACTION_RESULT_KEY] = result_label
                 
         # [1.1.] Header
-        save_button = tk.Button(master=history_tab, text="Save", width="6", anchor=tk.W)
+        save_button = tk.Button(master=history_tab, text="Save", width="6")
         save_button.pack(anchor=tk.W)
 
         def onSave():
@@ -281,10 +285,77 @@ class UI:
                 onDelete=self.remove_history_action,
             )
 
-        # TODO [3]: - Add save(export)/import option for the Actions History tab.
-        self.tab_control.add(child=history_tab, text="Actions History")
+        # TODO [3]: - Add save(export)/import option for the History tab.
+        self.tab_control.add(child=history_tab, text="History")
 
 
+    def __renderTemplateTab(self) -> None:
+        template_tab = ttk.Frame(master=self.tab_control)
+        self.frames[TEMPLATE_TAB_KEY] = template_tab
+
+        # TODO: Rename this top_frame. Does the same thing for the __renderHistoryTab.
+        top_frame = tk.Frame(master=template_tab)
+        top_frame.pack(side=tk.TOP, fill=tk.X)
+        
+        save_button = tk.Button(master=top_frame, text="Save", width="6")
+        save_button.pack(side=tk.LEFT)
+
+        save_all_button = tk.Button(master=top_frame, text="Save all", width="6")
+        save_all_button.pack(side=tk.LEFT)
+
+        template_tab_control = ttk.Notebook(master=template_tab, padding=(0, 4, 0, 0))
+        template_tab_control.pack(expand=1, fill="both")
+
+        def onRenameTab() -> None:
+            response = simpledialog.askstring(title="New tab name", prompt="Please enter the tab name")
+            if response is not None:
+                template_tab_control.tab(template_tab_control.select(), text=response)
+
+        # TODO: Add a hotkey for this?
+        rename_button = tk.Button(master=top_frame, text="Rename", width="6", command=onRenameTab)
+        rename_button.pack(side=tk.LEFT)
+
+        import_button = tk.Button(master=top_frame, text="Import", width="6")
+        import_button.pack(side=tk.RIGHT)
+
+        export_button = tk.Button(master=top_frame, text="Export", width="6")
+        export_button.pack(side=tk.RIGHT)
+
+        # TODO: Rename this main_frame, it's certainly not the "main" one that I care about.
+        main_frame = tk.Frame(master=template_tab)
+        main_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        
+        template1 = ttk.Frame(master=template_tab_control)
+        template_tab_control.add(child=template1, text="New template")
+        tk.Label(master=template1, text="Test template 1").pack(padx=10, pady=10)
+        
+        # template2 = ttk.Frame(master=template_tab_control)
+        # template_tab_control.add(child=template2, text="Example template 2")
+        # tk.Label(master=template2, text="Test template 2").pack(padx=10, pady=10)
+
+        # onAddTabClick checked if the users click on the <<New tab icon>> (aka the last tab).
+        # If they do, add a new tab right before the <<New tab icon>>,
+        # and select that newly added tab.
+        # https://stackoverflow.com/questions/71859022/tkinter-notebook-create-new-tabs-by-clicking-on-a-plus-tab-like-every-web-brow
+        # 
+        # TODO: Add a hotkey for this?
+        def onAddTabClick(_: tk.Event):
+            selected_tab: ttk.Frame = template_tab_control.select()
+            new_tab_icon: ttk.Frame = template_tab_control.tabs()[-1]
+            
+            if selected_tab == new_tab_icon:
+                index = len(template_tab_control.tabs()) - 1
+                new_template = ttk.Frame(master=template_tab_control)
+                template_tab_control.insert(index, child=new_template, text="New template")
+                template_tab_control.select(index)
+
+        template_tab_control.bind("<<NotebookTabChanged>>", onAddTabClick)
+        add_button = tk.Frame()
+        template_tab_control.add(child=add_button, text="+")
+        
+        self.tab_control.add(child=template_tab, text="Templates")
+
+    
     def __disableAllEntriesActionsTab(self) -> None:
         """__disableAllEntries clears all the entries of the Actions tab
         and converts them to readonly mode.

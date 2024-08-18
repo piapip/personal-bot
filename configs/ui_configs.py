@@ -2,10 +2,10 @@ GUI_SIZE = "750x450"
 
 # List of key to map from key --> tk object.
 ################################################
-# TAB
+# TABS
 ACTION_TAB_KEY = "Action tab key"
-HISTORY_TAB_KEY = "History tab key"     # HISTORY_TAB_KEY is for the Actions History tab.
-HISTORY_TABLE_KEY = "History table key" # HISTORY_TABLE_KEY is for the table in the HISTORY_TAB.
+HISTORY_TAB_KEY = "History tab key"     # HISTORY_TAB_KEY is for the History tab.
+TEMPLATE_TAB_KEY = "Template tab key"
 ################################################
 # INPUT LABEL
 NAME_ENTRY_KEY = "Name entry key"
@@ -24,9 +24,6 @@ class ResultText(StrEnum):
     IN_PROGRESS = "Please wait. Executing..."
     SUCCESS = "Success"
     FAILED = "{}"
-################################################
-# HISTORY TABLE
-HISTORY_TABLE_KEY = "History table"
 ################################################
 # HISTORY TABLE
 EXECUTE_BUTTON_KEY = "Execute button key"
