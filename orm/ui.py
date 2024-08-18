@@ -1,11 +1,14 @@
 from tkinter import Tk, ttk, messagebox 
 import tkinter as tk
 from typing import Dict
+import threading
+import re
+import json
+
 from configs.ui_configs import (
     GUI_SIZE,
     ACTION_TAB_KEY,
     HISTORY_TAB_KEY,
-    HISTORY_TABLE_KEY,
     NAME_ENTRY_KEY,
     CSS_SELECTOR_ENTRY_KEY,
     VALUE_ENTRY_KEY,
@@ -14,7 +17,6 @@ from configs.ui_configs import (
     SINGLE_ACTION_RESULT_KEY,
     HISTORY_ACTION_RESULT_KEY,
     ResultText,
-    HISTORY_TABLE_KEY,
     EXECUTE_BUTTON_KEY,
 )
 from orm.driver import Driver
@@ -22,9 +24,14 @@ from orm.actions_history import (
     ActionType,
     Action,
 )
-import threading
-import re
-import json
+from orm.scrollable_table import (
+    TableHeader,
+    ScrollableActionTable,
+)
+from helpers.ui import (
+    StyledEntry,
+    SetStyle,
+)
 
 
 ENTRY_LABELS = [
@@ -38,8 +45,7 @@ class UI:
     def __init__(self, driver:Driver) -> None:
         self.driver = driver
         self.root = Tk()
-        # Set style for the Entry, to make the text having some type of padding.
-        ttk.Style().configure('pad.TEntry', padding='5 3 3 3 ')
+        SetStyle()
 
         self.root.geometry(newGeometry=GUI_SIZE)
         self.root.title(string="Execute window")
@@ -48,11 +54,14 @@ class UI:
         self.selected_option_boxes: Dict[str, str] = {}
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
+        
+        # TODO: I can probably kill this thing?
+        # It's already in the history and easily exportable.
         self.history_actions: list[Action] = [
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
@@ -81,10 +90,6 @@ class UI:
         self.__renderHistoryActionsTab()
         
         tab_control.select(self.frames[HISTORY_TAB_KEY])
-
-    
-    def Entry(self, master: tk.Frame) -> ttk.Entry:
-        return ttk.Entry(master=master, style="pad.TEntry")
     
 
     def addTextInput(self, master_label:str, answer_label:str, text:str, disabled:bool):
@@ -99,7 +104,7 @@ class UI:
         label = tk.Label(master=entry_label_frame, text=text, width=12, anchor=tk.W)
         label.grid(row=0, column=0, sticky=tk.W + tk.E)
         
-        entry = self.Entry(master=entry_label_frame)
+        entry = StyledEntry(master=entry_label_frame)
         entry.grid(row=0, column=1, sticky=tk.W + tk.E)
         if disabled:
             entry.config(state="readonly")
@@ -170,148 +175,16 @@ class UI:
         
         self.tab_control.add(child=action_tab, text="Actions")
 
-    
-    def __addHistoryActionRow(self, action: Action, action_index: int) -> None:
-        """__addHistoryActionRow render the rows to represent
-        the executed action on the Actions History table.
-        """
-        history_table = self.frames[HISTORY_TABLE_KEY]
-
-        replay_button = tk.Button(master=history_table, text="Run", anchor=tk.W)
-        replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
-    
-        # Name column
-        name_entry = self.Entry(master=history_table)
-        name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
-        name_entry.insert(tk.END, action.name) # Fill data
-        if not action.needName(): # Then check if I need to disable the entry
-            name_entry.config(state="readonly")
-        
-        # CSS Selector column
-        css_selector_entry = self.Entry(master=history_table)
-        css_selector_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
-        css_selector_entry.insert(tk.END, action.css) # Fill data
-        if not action.needCSS(): # Then check if I need to disable the entry
-            css_selector_entry.config(state="readonly")
-
-        # Value column
-        value_entry = self.Entry(master=history_table)
-        value_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
-        value_entry.insert(tk.END, action.value) # Fill data
-        if not action.needValue(): # Then check if I need to disable the entry
-            value_entry.config(state="readonly")
-
-        def __retriggerHistoryAction(replay_button=replay_button) -> None:
-            """__retriggerHistoryAction triggered the action that was executed from the past.
-            It will also save the retrigger attempt as the latest version in the history.
-            """
-            result_label = self.result_labels[HISTORY_ACTION_RESULT_KEY]
-            action.name = name_entry.get()
-            action.css = css_selector_entry.get()
-            action.value = value_entry.get()
-            action.failed_reason = "" # Reset the previous attempt's failed reason as well.
-
-            # Block the execute button to prevent double clicking.
-            replay_button.config(state="disabled")
-            
-            # Update the result bar to yellow hinting that it's running. 
-            result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
-
-            def __processHistoryAction():
-                try:
-                    self.executeAction(action)
-                except Exception as e:
-                    # Update the result label with error if there's an error
-                    result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
-                else:
-                    # Else, mark it as done.
-                    result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
-                finally:
-                    replay_button.config(state="normal")
-                    print("stored action: {}".format(self.history_actions[action_index]))
-
-            # Put the long process of the browser trying to do stuff in the thread. 
-            execution_thread = threading.Thread(target=__processHistoryAction)
-            execution_thread.start()
-
-        # Replay button column
-        replay_button.config(command=__retriggerHistoryAction)
-
-        def onUpdateHistoryActionType(action_type: str):
-            """onUpdateHistoryActionType updates the history action's action_type
-            and re-render the data blurring."""
-            action.action_type = action_type
-
-            # Disable all the entries of the row.
-            name_entry.config(state="readonly")
-            css_selector_entry.config(state="readonly")
-            value_entry.config(state="readonly")
-
-            # Then enable those that are required for the action type.
-            match action_type:
-                case ActionType.CLICK_BY_NAME:
-                    name_entry.configure(state="normal", background="white")
-                case ActionType.CLICK_BY_SELECTOR:
-                    css_selector_entry.configure(state="normal", background="white")
-                case ActionType.CLICK_BY_VALUE:
-                    css_selector_entry.configure(state="normal", background="white")
-                    value_entry.configure(state="normal", background="white")
-        
-        # Action column.
-        # Even though, action column appears before the other entry columns,
-        # due to the technical limitation that prevent us from updating the OptionBox's command,
-        # I have to create the OptionBox last, because the command on update relies on having other columns initiated first.
-        options=(
-            ActionType.CLICK_BY_NAME,
-            ActionType.CLICK_BY_SELECTOR,
-            ActionType.CLICK_BY_VALUE,
-            # ActionType.SWITCH_TAB,
-        )
-
-        selected_option = tk.StringVar()
-        selected_option.set(action.action_type)
-        option_menu = tk.OptionMenu(history_table, selected_option, *options, command=onUpdateHistoryActionType)
-        option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
-            
-        # Remove button column
-        remove_button = tk.Button(master=history_table, text="Remove", anchor=tk.W)
-        remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
-
-        def delete_row() -> None:
-            """remove_row deletes the row in the Actions History and remove it from the saved data.
-            """
-            # TODO: Put all of this under a frame or smt.
-            # Like a widget, so if I want to delete the entire row,
-            # I just need to call 1 "row.destroy()" instead of component one by one.
-            # Though I don't hate this one by one, easy for customization.
-        
-            # Destroy all the widgets in the row.
-            replay_button.destroy()
-            option_menu.destroy()
-            name_entry.destroy()
-            css_selector_entry.destroy()
-            value_entry.destroy()
-            remove_button.destroy()
-
-            # Remove the action from the history.
-            self.history_actions.remove(action)
-        
-        remove_button.config(command=delete_row)
-    
-
     # __renderHistoryActionsTab generates the tab containing 
     # all the actions that were executed in the "Actions" tab.
     # Process:
     # 1. Initiate the main frame including:
-    #    1.1. Header: Save button.
+    #    1.1. the tab's Header (not table header): Save button.
     #    1.2. Main content: The table and the scroll bar.
     #    1.3. Footer: The result label.
-    # 2. Initiate the canvas and the scrollbar, this combination will produce the scrollable table.
-    # 3. Fill in the table data.
-    #    3.1. Start with the header.
-    #    3.2. Go through all the actions and fill in slot by slot (not even row by row).
-    #         I have no design so I prefer customization to code cleanliness for now. :3
-    # 4. Make the table dynamically scale with the window size.
+    # 2. Fill in the table data.
+    #    2.1. Start with the header.
+    #    2.2. Fill up the actions.
     def __renderHistoryActionsTab(self) -> None:        
         history_tab = ttk.Frame(master=self.tab_control)
         self.frames[HISTORY_TAB_KEY] = history_tab
@@ -357,29 +230,11 @@ class UI:
         result_label.pack(padx=10, pady=10, fill="x")
 
         # [2.]
-        # Initiating the canvas for the scrollable table.
-        main_canvas = tk.Canvas(master=main_content_frame)
-        main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        # Link a scrollbar to the canvas.
-        vertical_scroll_bar = tk.Scrollbar(master=main_content_frame, orient=tk.VERTICAL, command=main_canvas.yview)
-        vertical_scroll_bar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        main_canvas.configure(yscrollcommand=vertical_scroll_bar.set)
-
-        # [3.]
         # Now actually filling in the table of the main content.
-        # The actual frame that contains the history that we'll work with mainly.
-        history_table_frame = ttk.Frame(master=main_canvas)
-        canvas_frame = main_canvas.create_window((0, 0), window=history_table_frame, anchor=tk.N+tk.W)
-
-        self.frames[HISTORY_TABLE_KEY] = history_table_frame
-
-        class TableHeader:
-            def __init__(self, text: str, weight: int) -> None:
-                self.text = text
-                self.weight = weight
-
+        self.action_table: ScrollableActionTable = ScrollableActionTable(master=main_content_frame, driver=self.driver)
+        
+        # [2.1.]
+        # Start with the header.
         headers: list[TableHeader] = [
             TableHeader(text="", weight=1),                # Column for the play button.
             TableHeader(text="Action", weight=1),          # Column for the action.
@@ -389,12 +244,10 @@ class UI:
             TableHeader(text="", weight=1),                # Column for the Remove button.
         ]
 
-        # Render the table header.
-        for i in range(len(headers)):
-            header = headers[i]
-            history_table_frame.grid_columnconfigure(index=i, weight=header.weight)
-            tk.Label(master=history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
+        self.action_table.setHeaders(headers=headers)
         
+        # [2.2.]
+        # Then fill up the actions.
         # Render the list of the actions to the table.
         for i in range(len(self.history_actions)):
             # Closure problem with python.
@@ -418,26 +271,16 @@ class UI:
             # Go is fine with this value locking, but not Python.
             # (Go lock by make a new reference pointing taking the same value, by reinitiating the variable using ":=")
             # 
-            # By calling __addHistoryActionRow with all the parameter name defined,
+            # By calling addHistoryActionRow with all the parameter name defined,
             # I accidentally lock the i value without knowing :3
-            self.__addHistoryActionRow(action=self.history_actions[i], action_index=i)
+            # In the example, is the action that is locked.
+            # action_table.addHistoryActionRow(..., action=self.history_actions[i], ...)
+            self.action_table.addHistoryActionRow(
+                action=self.history_actions[i],
+                result_label=result_label,
+                onDelete=self.remove_history_action,
+            )
 
-        # [4.]
-        # Now with all the data filled in, makes the table scale dynamically with the window size.
-        # 
-        # updateCanvansFrameWidth makes the table's size scale with the window's resizing. 
-        # https://stackoverflow.com/questions/29319445/tkinter-how-to-get-frame-in-canvas-window-to-expand-to-the-size-of-the-canvas
-        def updateCanvansFrameWidth(event: tk.Event):
-            canvas_width = event.width
-            main_canvas.itemconfig(canvas_frame, width=canvas_width)
-
-        # onFrameConfigure updates the canvas's coverage on window resizing.
-        def onFrameConfigure(event: tk.Event):
-            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
-
-        history_table_frame.bind("<Configure>", onFrameConfigure)
-        main_canvas.bind("<Configure>", updateCanvansFrameWidth)
-        
         # TODO [3]: - Add save(export)/import option for the Actions History tab.
         self.tab_control.add(child=history_tab, text="Actions History")
 
@@ -546,50 +389,6 @@ class UI:
                     )
                 else:
                     raise Exception("Tab index must be a positive number for the Switching Tab action!")
-
-
-    # executeAction executes the given command on the driver based on the given action type.
-    # It's expected for this action to take a long time to execute,
-    # so remember to use thread to call this function.
-    def executeAction(self, action: Action) -> None:
-        from helpers.action import sleep
-
-        sleep(1.5)
-
-        try:
-            match action.action_type:
-                case ActionType.CLICK_BY_NAME:
-                    # raise Exception("forced fail")
-                    if action.name == "":
-                        raise Exception("name is expected for the Click by Name action")
-                    else:
-                        self.driver.clickByName(name=action.name)
-                case ActionType.CLICK_BY_SELECTOR:
-                    css_selector = action.css
-                    
-                    if css_selector == "":
-                        raise Exception("css_selector is expected for the Click by CSS action")
-                    else:
-                        self.driver.clickByCSS(selector=css_selector)
-                case ActionType.CLICK_BY_VALUE:
-                    css_selector = action.css
-                    value = action.value
-                    
-                    if css_selector == "" or value == "":
-                        raise Exception("css_selector and value are expected for the Click by Value action")
-                    else:
-                        self.driver.clickByValue(selector=css_selector, value=value)
-                    
-                case ActionType.SWITCH_TAB:
-                    self.driver.switchTab(tab_index=action.tab_index)
-        except Exception as e:
-            action.failed_reason = "{}".format(e)
-            raise e
-        finally:
-            print("executed: {}".format(action))
-        
-        # If the action reaches to the end without any problem, then mark it as successful.
-        action.failed_reason = ""
     
     # __submitButtonPressed contains the logic when we submit the data for the "Actions" tab.
     # Performing simple action on the selenium driver (bot windows)
@@ -618,7 +417,7 @@ class UI:
 
         def __processAction(action=action):
             try:
-                self.executeAction(action=action)
+                action.executeAction(driver=self.driver)
             except Exception as e:
                 # Update the result label with error if there's an error
                 result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
@@ -628,7 +427,11 @@ class UI:
             finally:
                 submit_button.config(state="normal")
                 if action.needToStore():
-                    self.__addHistoryActionRow(action=action, action_index=action_index)
+                    self.action_table.addHistoryActionRow(
+                        action=action,
+                        result_label=self.result_labels[HISTORY_ACTION_RESULT_KEY],
+                        onDelete=self.remove_history_action,
+                    )
         
         # Put the long process of the browser trying to do stuff in the thread. 
         execution_thread = threading.Thread(target=__processAction)
@@ -664,3 +467,7 @@ class UI:
             json.dump(self.history_actions, default=lambda o: o.encode(), indent=4, fp=f)
 
         print("Done...")
+
+
+    def remove_history_action(self, action:Action) -> None:
+        self.history_actions.remove(action)
