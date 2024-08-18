@@ -636,6 +636,8 @@ class UI:
 
     # Start the application.
     def go(self) -> None:
+        # When the UI is initiated, it's linked to the mock browser, but not linked to any tab yet.
+        # The mock browser always has 1 empty tab open, so for convenience, I'll link the UI to that empty tab.
         self.driver.switchTab(0)
         self.root.mainloop()
 

@@ -1,4 +1,4 @@
-GUI_SIZE = "750x350"
+GUI_SIZE = "750x450"
 
 # List of key to map from key --> tk object.
 ################################################
@@ -23,7 +23,7 @@ HISTORY_ACTION_RESULT_KEY = "History action result key"
 class ResultText(StrEnum):
     IN_PROGRESS = "Please wait. Executing..."
     SUCCESS = "Success"
-    FAILED = "Step failed because of: {}"
+    FAILED = "{}"
 ################################################
 # HISTORY TABLE
 HISTORY_TABLE_KEY = "History table"

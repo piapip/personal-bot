@@ -14,6 +14,7 @@ from helpers.action import (
     sleep,
 )
 from selenium import webdriver 
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
@@ -82,13 +83,17 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again.
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
-        except Exception:
+        except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
             try:
                 elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
+            except TimeoutException as timeoutEx:
+                raise Exception("not found element by name ({}): {}".format(name, timeoutEx.msg))
             except Exception as e:
                 raise Exception("failed to get element by name ({}): {}".format(name, e))
+        except Exception as e:
+            raise Exception("failed to get element by name ({}): {}".format(name, e))
             
         return elem
     
@@ -107,14 +112,18 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again.
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
-        except Exception:
+        except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
             try:
                 elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+            except TimeoutException as timeoutEx:
+                raise Exception("not found element by css ({}): {}".format(selector, timeoutEx.msg))
             except Exception as e:
-                raise Exception("failed to get element by css ({}): {}".format(selector, e.Message))
-        
+                raise Exception("failed to get element by css ({}): {}".format(selector, e))
+        except Exception as e:
+            raise Exception("failed to get element by css ({}): {}".format(selector, e))
+            
         return elem
 
 
@@ -132,13 +141,17 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
-        except Exception:
+        except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
             try:
                 elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+            except TimeoutException as timeoutEx:
+                raise Exception("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
             except Exception as e:
-                raise Exception("failed to get element by selector ({}) - value ({}): {}".format(selector, value, e))
+                raise Exception("failed to list element by selector ({}): {}".format(selector, e))
+        except Exception as e:
+            raise Exception("failed to list element by selector ({}): {}".format(selector, e))
         
         for e in elements:
             if e.text == value:

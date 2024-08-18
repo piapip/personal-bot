@@ -2,7 +2,4 @@
 
 [5] Hit critical performance issue when there are multiple history actions.
 
-[7] The error box is displaying the entire stack trace sometimes.
-    Don't do that.
-
 [8] Add a repositioning button.
