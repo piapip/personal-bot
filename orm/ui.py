@@ -426,6 +426,7 @@ class UI:
         # Now with all the data filled in, makes the table scale dynamically with the window size.
         # 
         # updateCanvansFrameWidth makes the table's size scale with the window's resizing. 
+        # https://stackoverflow.com/questions/29319445/tkinter-how-to-get-frame-in-canvas-window-to-expand-to-the-size-of-the-canvas
         def updateCanvansFrameWidth(event: tk.Event):
             canvas_width = event.width
             main_canvas.itemconfig(canvas_frame, width=canvas_width)
