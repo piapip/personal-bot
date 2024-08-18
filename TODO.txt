@@ -1,8 +1,8 @@
-[3] Add save(export)/import option for the Actions History tab.
+[3] Add export/import option for the Actions History tab.
 
 [5] Hit critical performance issue when there are multiple history actions.
 
-[6] Add rolling bind.
-
 [7] The error box is displaying the entire stack trace sometimes.
     Don't do that.
+
+[8] Add a repositioning button.

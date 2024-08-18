@@ -13,7 +13,6 @@ from configs.ui_configs import (
     ACTION_OPTION_BOX_KEY,
     SINGLE_ACTION_RESULT_KEY,
     HISTORY_ACTION_RESULT_KEY,
-    FOOTER_GRID_ROW,
     ResultText,
     HISTORY_TABLE_KEY,
     EXECUTE_BUTTON_KEY,
@@ -24,6 +23,8 @@ from orm.actions_history import (
     Action,
 )
 import threading
+import re
+import json
 
 
 ENTRY_LABELS = [
@@ -48,12 +49,12 @@ class UI:
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
         self.history_actions: list[Action] = [
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
@@ -67,6 +68,7 @@ class UI:
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
         ]
+        self.save_file_name: str = ""
 
         tab_control = ttk.Notebook(master=self.root)
         tab_control.pack(expand=1, fill="both")
@@ -281,8 +283,7 @@ class UI:
             # TODO: Put all of this under a frame or smt.
             # Like a widget, so if I want to delete the entire row,
             # I just need to call 1 "row.destroy()" instead of component one by one.
-            # Though I don't hate this one by one, more customization.
-            # Also, I designed on the fly, so customization is way more important than cleanliness for now. :3
+            # Though I don't hate this one by one, easy for customization.
         
             # Destroy all the widgets in the row.
             replay_button.destroy()
@@ -298,53 +299,94 @@ class UI:
         remove_button.config(command=delete_row)
     
 
-    def __renderHistoryActionsTab(self) -> None:
-        """__renderHistoryActionsTab generates the tab containing 
-        all the actions that were executed in the "Actions" tab.
-        """
-        
+    # __renderHistoryActionsTab generates the tab containing 
+    # all the actions that were executed in the "Actions" tab.
+    # Process:
+    # 1. Initiate the main frame including:
+    #    1.1. Header: Save button.
+    #    1.2. Main content: The table and the scroll bar.
+    #    1.3. Footer: The result label.
+    # 2. Initiate the canvas and the scrollbar, this combination will produce the scrollable table.
+    # 3. Fill in the table data.
+    #    3.1. Start with the header.
+    #    3.2. Go through all the actions and fill in slot by slot (not even row by row).
+    #         I have no design so I prefer customization to code cleanliness for now. :3
+    # 4. Make the table dynamically scale with the window size.
+    def __renderHistoryActionsTab(self) -> None:        
         history_tab = ttk.Frame(master=self.tab_control)
         self.frames[HISTORY_TAB_KEY] = history_tab
 
-        # Outer grid: 2 column: 1 for the big canvas, 1 for the scrollbar.
-        main_canvas = tk.Canvas(master=history_tab)
+        # Outer grid:
+        #  Header: button to save the history.
+        #  Main content: main screen for the big canvas, right side for the scrollbar.
+        #  Footer: show the result label.
+
+        # [1.] 
+        # [1.3.] Footer
+        # Initiate this first because the rest of the screen's error reporting will be via the footer banner.
+        # We place it on the screen later though.
+        result_label = tk.Label(master=history_tab, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
+        self.result_labels[HISTORY_ACTION_RESULT_KEY] = result_label
+                
+        # [1.1.] Header
+        save_button = tk.Button(master=history_tab, text="Save", width="6", anchor=tk.W)
+        save_button.pack(anchor=tk.W)
+
+        def onSave():
+            save_button.config(state="disabled", text="Saving...")
+            
+            def savingProcess():
+                try:
+                    self.save()
+                except Exception as e:
+                    print("failed to save: {}".format(e))
+                finally:
+                    save_button.config(state="normal", text="Save")
+
+            # Normally, this process is pretty fast. But hey, just to be sure.
+            saving_thread = threading.Thread(target=savingProcess)
+            saving_thread.start()
+
+        save_button.config(command=onSave)
+
+        # [1.2.] Main content
+        main_content_frame = tk.Frame(master=history_tab)
+        main_content_frame.pack(anchor=tk.CENTER, fill=tk.BOTH, expand=True)
+        
+        # Placing the footer
+        result_label.pack(padx=10, pady=10, fill="x")
+
+        # [2.]
+        # Initiating the canvas for the scrollable table.
+        main_canvas = tk.Canvas(master=main_content_frame)
         main_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Link a scrollbar to the canvas.
-        vertical_scroll_bar = tk.Scrollbar(master=history_tab, orient=tk.VERTICAL, command=main_canvas.yview)
+        vertical_scroll_bar = tk.Scrollbar(master=main_content_frame, orient=tk.VERTICAL, command=main_canvas.yview)
         vertical_scroll_bar.pack(side=tk.RIGHT, fill=tk.Y)
 
         main_canvas.configure(yscrollcommand=vertical_scroll_bar.set)
-        
+
+        # [3.]
+        # Now actually filling in the table of the main content.
         # The actual frame that contains the history that we'll work with mainly.
         history_table_frame = ttk.Frame(master=main_canvas)
         canvas_frame = main_canvas.create_window((0, 0), window=history_table_frame, anchor=tk.N+tk.W)
 
-        # Events to make the table scale with the window's resizing. 
-        def updateCanvansFrameWidth(event: tk.Event):
-            canvas_width = event.width
-            main_canvas.itemconfig(canvas_frame, width=canvas_width)
-
-        def onFrameConfigure(event: tk.Event):
-            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
-
-        history_table_frame.bind("<Configure>", onFrameConfigure)
-        main_canvas.bind("<Configure>", updateCanvansFrameWidth)
-
         self.frames[HISTORY_TABLE_KEY] = history_table_frame
 
-        class Header:
+        class TableHeader:
             def __init__(self, text: str, weight: int) -> None:
                 self.text = text
                 self.weight = weight
 
-        headers: list[Header] = [
-            Header(text="", weight=1),                # Column for the play button.
-            Header(text="Action", weight=1),          # Column for the action.
-            Header(text="Name", weight=4),            #
-            Header(text="CSS Selector", weight=4),    #
-            Header(text="Value", weight=4),           #
-            Header(text="", weight=1),                # Column for the Remove button.
+        headers: list[TableHeader] = [
+            TableHeader(text="", weight=1),                # Column for the play button.
+            TableHeader(text="Action", weight=1),          # Column for the action.
+            TableHeader(text="Name", weight=4),            #
+            TableHeader(text="CSS Selector", weight=4),    #
+            TableHeader(text="Value", weight=4),           #
+            TableHeader(text="", weight=1),                # Column for the Remove button.
         ]
 
         # Render the table header.
@@ -380,9 +422,20 @@ class UI:
             # I accidentally lock the i value without knowing :3
             self.__addHistoryActionRow(action=self.history_actions[i], action_index=i)
 
-        result_label = tk.Label(master=history_table_frame, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
-        result_label.grid(pady=10, column=0, row=FOOTER_GRID_ROW, columnspan=len(headers), sticky=tk.E + tk.W)
-        self.result_labels[HISTORY_ACTION_RESULT_KEY] = result_label
+        # [4.]
+        # Now with all the data filled in, makes the table scale dynamically with the window size.
+        # 
+        # updateCanvansFrameWidth makes the table's size scale with the window's resizing. 
+        def updateCanvansFrameWidth(event: tk.Event):
+            canvas_width = event.width
+            main_canvas.itemconfig(canvas_frame, width=canvas_width)
+
+        # onFrameConfigure updates the canvas's coverage on window resizing.
+        def onFrameConfigure(event: tk.Event):
+            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+
+        history_table_frame.bind("<Configure>", onFrameConfigure)
+        main_canvas.bind("<Configure>", updateCanvansFrameWidth)
         
         # TODO [3]: - Add save(export)/import option for the Actions History tab.
         self.tab_control.add(child=history_tab, text="Actions History")
@@ -583,4 +636,28 @@ class UI:
 
     # Start the application.
     def go(self) -> None:
+        self.driver.switchTab(0)
         self.root.mainloop()
+
+    
+    # save exports the history to json.
+    def save(self) -> None:
+        from pathlib import Path
+
+        print("Saving...")
+        
+        # Make the history folder if not exists.
+        history_folder = "./history"
+        Path(history_folder).mkdir(parents=True, exist_ok=True)
+        filename = "dump"
+
+        # The actual saving.
+        if self.save_file_name == "":
+            if not re.match("[A-Za-z0-9-_]+", filename):
+                raise Exception("filename can only contains: alphabetical characters, numbers, -, _. Your filename: {}".format(filename))
+            self.save_file_name = history_folder + "/" + filename + ".json"
+        
+        with open(self.save_file_name, "w") as f:
+            json.dump(self.history_actions, default=lambda o: o.encode(), indent=4, fp=f)
+
+        print("Done...")

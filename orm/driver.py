@@ -4,8 +4,8 @@ from configs.automation_configs import (
     LOGIN_BUTTON_SELECTOR,
     PLAY_BUTTON,
     WORLD_SELECTOR,
-
     SLEEP_TIME_AFTER_LOAD,
+    RETRY_INTERVAL,
     ELEMENT_LOADING_TIMEOUT,
     USERNAME,
     PASSWORD,
@@ -84,8 +84,11 @@ class Driver:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
         except Exception:
             self.driver.refresh()
-            sleep(5)
-            elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
+            sleep(RETRY_INTERVAL)
+            try:
+                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
+            except Exception as e:
+                raise Exception("failed to get element by name ({}): {}".format(name, e))
             
         return elem
     
@@ -106,8 +109,11 @@ class Driver:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
         except Exception:
             self.driver.refresh()
-            sleep(5)
-            elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+            sleep(RETRY_INTERVAL)
+            try:
+                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+            except Exception as e:
+                raise Exception("failed to get element by css ({}): {}".format(selector, e.Message))
         
         return elem
 
@@ -128,14 +134,17 @@ class Driver:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
         except Exception:
             self.driver.refresh()
-            sleep(5)
-            elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+            sleep(RETRY_INTERVAL)
+            try:
+                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+            except Exception as e:
+                raise Exception("failed to get element by selector ({}) - value ({}): {}".format(selector, value, e))
         
         for e in elements:
             if e.text == value:
                 return e
         
-        return Exception("selector ({}) - value ({}) not found".format(selector, value))
+        raise Exception("selector ({}) - value ({}) not found".format(selector, value))
 
 
     @__check_dry_run
@@ -160,8 +169,7 @@ class Driver:
         try:
             current_tab_counts = self.countTabs()
             if tab_index >= current_tab_counts:
-                print("not good...")
-                return Exception("tab index must be less than {}".format(current_tab_counts)) 
+                raise Exception("tab index must be less than {}".format(current_tab_counts)) 
             
             self.driver.switch_to.window(self.driver.window_handles[tab_index])
         except Exception as e:

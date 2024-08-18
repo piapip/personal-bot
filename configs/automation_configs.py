@@ -1,5 +1,8 @@
 SLEEP_TIME_AFTER_LOAD=0.3
-ELEMENT_LOADING_TIMEOUT=30
+
+# RETRY_INTERVAL is the sleep time between retry attempts. 
+RETRY_INTERVAL=1
+ELEMENT_LOADING_TIMEOUT=5
 # ELEMENT_LOADING_TIMEOUT=2
 
 LOBBY_URL = "https://lobby.ikariam.gameforge.com/en_US/"

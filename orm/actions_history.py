@@ -1,5 +1,5 @@
 from enum import StrEnum
-from uuid import uuid4, UUID
+# from uuid import uuid4, UUID
 
 class ActionType(StrEnum):
     CLICK_BY_NAME = "Click by name"
@@ -92,3 +92,10 @@ class Action:
         a successful attempt or a failed attempt. 
         """
         return self.failed_reason == ""
+
+
+    # encode is for the UI's save feature, dumping data from class to JSON file.
+    # https://stackoverflow.com/questions/61553988/json-serialization-of-a-list-of-objects-of-a-custom-class
+    def encode(self):
+        return self.__dict__
+
