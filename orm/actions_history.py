@@ -26,7 +26,7 @@ class Action:
         self.css: str = css
         self.value: str = value
         self.tab_index: int = tab_index
-        self.failed_reason: str = ""
+        self.failed_reason: str = "not execute yet!"
 
     
     def __str__(self) -> str:
@@ -132,6 +132,8 @@ class Action:
         except Exception as e:
             self.failed_reason = "{}".format(e)
             raise e
+        else:
+            self.failed_reason = ""
         finally:
             print("executed: {}".format(self))
         

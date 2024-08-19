@@ -29,6 +29,7 @@ from orm.scrollable_table import (
     TableHeader,
     ScrollableActionTable,
 )
+from orm.tab_templates import TabTemplates
 from helpers.ui import (
     StyledEntry,
     SetStyle,
@@ -56,7 +57,7 @@ class UI:
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
         
-        # TODO: I can probably kill this thing?
+        # TODO [14]: I can probably kill this thing?
         # It's already in the history and easily exportable.
         self.history_actions: list[Action] = [
             Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
@@ -93,7 +94,7 @@ class UI:
         # Tab 3 for the templates for repetitive automation.
         self.__renderTemplateTab()
         
-        tab_control.select(self.frames[TEMPLATE_TAB_KEY])
+        tab_control.select(self.tab_templates.main_ui)
     
 
     def addTextInput(self, master_label:str, answer_label:str, text:str, disabled:bool):
@@ -214,6 +215,7 @@ class UI:
             
             def savingProcess():
                 try:
+                    # TODO [16]: updateAction before saving. 
                     self.save()
                 except Exception as e:
                     print("failed to save: {}".format(e))
@@ -254,7 +256,7 @@ class UI:
         # Then fill up the actions.
         # Render the list of the actions to the table.
         for i in range(len(self.history_actions)):
-            # Closure problem with python.
+            # Closure problem with python. [EXPLAIN]
             # If I ever need to lock this i value, like how Go used to do "i:=i"
             # This is how python locks value.
             # 
@@ -290,70 +292,8 @@ class UI:
 
 
     def __renderTemplateTab(self) -> None:
-        template_tab = ttk.Frame(master=self.tab_control)
-        self.frames[TEMPLATE_TAB_KEY] = template_tab
-
-        # TODO: Rename this top_frame. Does the same thing for the __renderHistoryTab.
-        top_frame = tk.Frame(master=template_tab)
-        top_frame.pack(side=tk.TOP, fill=tk.X)
-        
-        save_button = tk.Button(master=top_frame, text="Save", width="6")
-        save_button.pack(side=tk.LEFT)
-
-        save_all_button = tk.Button(master=top_frame, text="Save all", width="6")
-        save_all_button.pack(side=tk.LEFT)
-
-        template_tab_control = ttk.Notebook(master=template_tab, padding=(0, 4, 0, 0))
-        template_tab_control.pack(expand=1, fill="both")
-
-        def onRenameTab() -> None:
-            response = simpledialog.askstring(title="New tab name", prompt="Please enter the tab name")
-            if response is not None:
-                template_tab_control.tab(template_tab_control.select(), text=response)
-
-        # TODO: Add a hotkey for this?
-        rename_button = tk.Button(master=top_frame, text="Rename", width="6", command=onRenameTab)
-        rename_button.pack(side=tk.LEFT)
-
-        import_button = tk.Button(master=top_frame, text="Import", width="6")
-        import_button.pack(side=tk.RIGHT)
-
-        export_button = tk.Button(master=top_frame, text="Export", width="6")
-        export_button.pack(side=tk.RIGHT)
-
-        # TODO: Rename this main_frame, it's certainly not the "main" one that I care about.
-        main_frame = tk.Frame(master=template_tab)
-        main_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        
-        template1 = ttk.Frame(master=template_tab_control)
-        template_tab_control.add(child=template1, text="New template")
-        tk.Label(master=template1, text="Test template 1").pack(padx=10, pady=10)
-        
-        # template2 = ttk.Frame(master=template_tab_control)
-        # template_tab_control.add(child=template2, text="Example template 2")
-        # tk.Label(master=template2, text="Test template 2").pack(padx=10, pady=10)
-
-        # onAddTabClick checked if the users click on the <<New tab icon>> (aka the last tab).
-        # If they do, add a new tab right before the <<New tab icon>>,
-        # and select that newly added tab.
-        # https://stackoverflow.com/questions/71859022/tkinter-notebook-create-new-tabs-by-clicking-on-a-plus-tab-like-every-web-brow
-        # 
-        # TODO: Add a hotkey for this?
-        def onAddTabClick(_: tk.Event):
-            selected_tab: ttk.Frame = template_tab_control.select()
-            new_tab_icon: ttk.Frame = template_tab_control.tabs()[-1]
-            
-            if selected_tab == new_tab_icon:
-                index = len(template_tab_control.tabs()) - 1
-                new_template = ttk.Frame(master=template_tab_control)
-                template_tab_control.insert(index, child=new_template, text="New template")
-                template_tab_control.select(index)
-
-        template_tab_control.bind("<<NotebookTabChanged>>", onAddTabClick)
-        add_button = tk.Frame()
-        template_tab_control.add(child=add_button, text="+")
-        
-        self.tab_control.add(child=template_tab, text="Templates")
+        self.tab_templates: TabTemplates = TabTemplates(master=self.tab_control, driver=self.driver)
+        self.tab_control.add(child=self.tab_templates.main_ui, text="Templates")
 
     
     def __disableAllEntriesActionsTab(self) -> None:
@@ -474,9 +414,7 @@ class UI:
             result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
             return
 
-        action_index : int = 0
         if action.needToStore():
-            action_index = len(self.history_actions)
             self.history_actions.append(action)
 
         # Update the result bar to yellow hinting that it's running. 

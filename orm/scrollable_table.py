@@ -51,7 +51,7 @@ class HistoryActionRow:
         # I have no concrete design after all.
 
         # Replay button
-        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=self.__retriggerHistoryAction)
+        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=self.retriggerHistoryAction)
         self.replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
 
         # Action cell.
@@ -91,16 +91,42 @@ class HistoryActionRow:
         # Remove button cell.
         self.remove_button: tk.Button = tk.Button(master=master, text="Remove", anchor=tk.W, command=self.__delete)
         self.remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
-        
 
-    def __retriggerHistoryAction(self) -> None:
-        """__retriggerHistoryAction triggered the action that was executed from the past.
+
+    # updateAction updates its own content based on the content provided via the GUI.
+    # updateAction will remove the action's failed reason if there's any change to the action.
+    def updateAction(self) -> None:
+        has_new_change: bool = False
+
+        new_name = self.name_entry.get()
+        current_name = self.action.name
+        if new_name != current_name:
+            print("new name!")
+            self.action.name = new_name
+            has_new_change = True
+        
+        new_css_selector = self.css_selector_entry.get()
+        if new_css_selector != self.action.css:
+            print("new css!")
+            self.action.css = new_css_selector
+            has_new_change = True
+
+        new_value = self.value_entry.get()
+        if new_value != self.action.value:
+            print("new value!")
+            self.action.value = new_value
+            has_new_change = True
+        
+        if has_new_change:
+            # Reset the previous attempt's failed reason if the action has any change.
+            self.action.failed_reason = "not execute yet!"
+
+
+    def retriggerHistoryAction(self) -> None:
+        """retriggerHistoryAction triggered the action that was executed from the past.
         It will also save the retrigger attempt as the latest version in the history.
         """
-        self.action.name = self.name_entry.get()
-        self.action.css = self.css_selector_entry.get()
-        self.action.value = self.value_entry.get()
-        self.action.failed_reason = "" # Reset the previous attempt's failed reason as well.
+        self.updateAction()
 
         # Block the execute button to prevent double clicking.
         self.replay_button.config(state="disabled")
@@ -150,13 +176,13 @@ class HistoryActionRow:
     def __delete(self) -> None:
         """__delete deletes the row in the History and remove it from the saved data.
         """
-        # TODO: Put all of this under a frame or smt.
+        # TODO [13]: Put all of this under a frame or smt.
         # Like a widget, so if I want to delete the entire row,
         # I just need to call 1 "row.destroy()" instead of component one by one.
         # Though I don't hate this one by one, easy for customization.
     
         # Destroy all the widgets in the row.
-        # TODO: Put all of this under a frame or smt.
+        # TODO [13]: Put all of this under a frame or smt.
         self.replay_button.destroy()
         self.option_menu.destroy()
         self.name_entry.destroy()

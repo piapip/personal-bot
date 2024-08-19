@@ -5,9 +5,27 @@
 [8] Add a repositioning button.
 
 [9] Add template that is loopable.
-    Add the table to the template.
+    [OK] Add the table to the template.
     Add the timer.
     Add the progressbar.
     Run everything.
 
 [10] Click by value with HTML .
+
+[11] Hotkey for the rename?
+
+[12] Hotkey for the add new tab (ctrl T)?
+
+[13] Put all the cell under the same widget or let the caller render the cell by itself. 
+
+[14] Don't let the UI handle the history_actions.
+
+[15] Maybe I can put the UI component into the Action object.
+     Like instead of storing name, value, css,
+     it will store the entries that provide those information...
+     And I can have multiple funciton like:
+       renderActionForActionsTab...
+       renderActionForHistoryTab...
+     How's that?
+
+[16] Update action before saving.
