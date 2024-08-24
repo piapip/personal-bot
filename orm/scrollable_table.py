@@ -9,8 +9,12 @@ from orm.actions_history import (
     Action,
 )
 from helpers.ui import StyledEntry
+from helpers.action import sleep
 from configs.ui_configs import (
-    ResultText
+    ResultText,
+    IN_PROGRESS_BG_COLOR,
+    FAILED_BG_COLOR,
+    SUCCESS_BG_COLOR,
 )
 
 class TableHeader:
@@ -51,7 +55,10 @@ class HistoryActionRow:
         # I have no concrete design after all.
 
         # Replay button
-        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=self.retriggerHistoryAction)
+        def replay_in_thread() -> None:
+            threading.Thread(target=self.retriggerHistoryAction).start()
+
+        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=replay_in_thread)
         self.replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
 
         # Action cell.
@@ -124,35 +131,51 @@ class HistoryActionRow:
 
     def retriggerHistoryAction(self) -> None:
         """retriggerHistoryAction triggered the action that was executed from the past.
-        It will also save the retrigger attempt as the latest version in the history.
+        It will also update the retrigger attempt as the latest version in the history.
+        It's expected for this action to take a long time to execute,
+        so remember to use thread to call this function.
         """
         self.updateAction()
 
-        # Block the execute button to prevent double clicking.
-        self.replay_button.config(state="disabled")
+        # Block the execute button to prevent double clicking
+        # and the remove button to avoid breaking change to the UI. 
+        self.freeze()
         
         # Update the result bar to yellow hinting that it's running. 
-        self.result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
+        self.result_label.configure(background=IN_PROGRESS_BG_COLOR, text=ResultText.IN_PROGRESS)
 
-        def __processHistoryAction():
-            try:
-                self.action.executeAction(driver=self.driver)
-            except Exception as e:
-                # Update the result label with error if there's an error
-                self.result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
-            else:
-                # Else, mark it as done.
-                self.result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
-            finally:
-                self.replay_button.config(state="normal")
-                # print("stored action: {}".format(self.history_actions[action_index]))
+        try:
+            self.action.executeAction(driver=self.driver)
+        except Exception as e:
+            # Update the result label with error if there's an error
+            self.result_label.configure(background=FAILED_BG_COLOR, text=ResultText.FAILED.format(e))
+        else:
+            # Else, mark it as done.
+            self.result_label.configure(background=SUCCESS_BG_COLOR, text=ResultText.SUCCESS)
+        finally:
+            self.unfreeze()
+            # print("stored action: {}".format(self.history_actions[action_index]))
 
-        # Put the long process of the browser trying to do stuff in the thread. 
-        execution_thread = threading.Thread(target=__processHistoryAction)
-        execution_thread.start()
+    
+    # freeze disables the run and the remove button
+    # so no severe changes can be made during the automation process. 
+    def freeze(self) -> None:
+        # Block the execute button to prevent double clicking.
+        self.replay_button.config(state="disabled", background=IN_PROGRESS_BG_COLOR)
+        # Prevent the remove button can be clicked during the automation.
+        self.remove_button.config(state="disabled")
+
+    
+    # unfreeze enables the run and the remove button
+    # so the row can be interactive again after the automation is done. 
+    def unfreeze(self) -> None:
+        # Block the execute button to prevent double clicking.
+        self.replay_button.config(state="normal", background="SystemButtonFace")
+        # Prevent the remove button can be clicked during the automation.
+        self.remove_button.config(state="normal")
 
 
-    def __onUpdateHistoryActionType(self, action_type: str):
+    def __onUpdateHistoryActionType(self, action_type: str) -> None:
         """onUpdateHistoryActionType updates the history action's action_type
         and re-render the data blurring."""
         self.action.action_type = action_type
@@ -237,7 +260,7 @@ class ScrollableActionTable:
             action: Action,
             result_label: tk.Label,
             onDelete: Callable[[Action], None],
-        ):
+        ) -> None:
         """
         :result_label: tk.Label: the label where the action shows the automation result.
         :onDelete: is the function that will be executed when the row is deleted.
@@ -256,11 +279,21 @@ class ScrollableActionTable:
 
     # __updateCanvansFrameWidth makes the table's size scale with the window's resizing. 
     # https://stackoverflow.com/questions/29319445/tkinter-how-to-get-frame-in-canvas-window-to-expand-to-the-size-of-the-canvas
-    def __updateCanvansFrameWidth(self, event: tk.Event):
+    def __updateCanvansFrameWidth(self, event: tk.Event) -> None:
         canvas_width = event.width
         self.main_canvas.itemconfig(self.history_table_frame_canvas_id, width=canvas_width)
 
+
     # __onFrameConfigure updates the canvas's coverage on window resizing.
     # https://stackoverflow.com/questions/29319445/tkinter-how-to-get-frame-in-canvas-window-to-expand-to-the-size-of-the-canvas
-    def __onFrameConfigure(self, event: tk.Event):
+    def __onFrameConfigure(self, event: tk.Event) -> None:
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
+
+
+    # retriggerAll rerun ALL the actions in the table in the sequential manner.
+    # retriggerAll takes a lot of time to execute so it needs to be put into a thread!
+    def retriggerAll(self) -> None:
+        for row in self.rows:
+            row.retriggerHistoryAction()
+            sleep(0.25)
+            

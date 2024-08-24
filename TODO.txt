@@ -8,7 +8,8 @@
     [OK] Add the table to the template.
     Add the timer.
     Add the progressbar.
-    Run everything.
+    Add the "Add step" button.
+    [OK] Run everything.
 
 [10] Click by value with HTML .
 

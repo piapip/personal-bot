@@ -1,4 +1,4 @@
-from tkinter import Tk, ttk, simpledialog 
+from tkinter import Tk, ttk 
 import tkinter as tk
 from typing import Dict
 import threading
@@ -10,7 +10,6 @@ from configs.ui_configs import (
     GUI_SIZE,
     ACTION_TAB_KEY,
     HISTORY_TAB_KEY,
-    TEMPLATE_TAB_KEY,
     NAME_ENTRY_KEY,
     CSS_SELECTOR_ENTRY_KEY,
     VALUE_ENTRY_KEY,
@@ -67,21 +66,6 @@ class UI:
         # TODO [14]: I can probably kill this thing?
         # It's already in the history and easily exportable.
         self.history_actions: list[Action] = [
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
@@ -181,7 +165,9 @@ class UI:
         self.result_labels[SINGLE_ACTION_RESULT_KEY] = result_label
 
         # Add the submit button to run the Automation on the browser (aka driver).
-        submit_button = tk.Button(master=action_tab, text="Execute", command=self.__submitButtonPressed)
+        def submit_in_thread() -> None:
+            threading.Thread(target=self.__submitButtonPressed).start()
+        submit_button = tk.Button(master=action_tab, text="Execute", command=submit_in_thread)
         submit_button.pack()
         self.buttons[EXECUTE_BUTTON_KEY] = submit_button
         
@@ -410,6 +396,7 @@ class UI:
     
     # __submitButtonPressed contains the logic when we submit the data for the "Actions" tab.
     # Performing simple action on the selenium driver (bot windows)
+    # This action takes a long time to execute so remember to put it in the thread!!!
     def __submitButtonPressed(self) -> None:
         result_label = self.result_labels[SINGLE_ACTION_RESULT_KEY]
         
@@ -431,27 +418,22 @@ class UI:
         submit_button = self.buttons[EXECUTE_BUTTON_KEY]
         submit_button.config(state="disabled")
 
-        def __processAction(action=action):
-            try:
-                action.executeAction(driver=self.driver)
-            except Exception as e:
-                # Update the result label with error if there's an error
-                result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
-            else:
-                # Else, mark it as done.
-                result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
-            finally:
-                submit_button.config(state="normal")
-                if action.needToStore():
-                    self.action_table.addHistoryActionRow(
-                        action=action,
-                        result_label=self.result_labels[HISTORY_ACTION_RESULT_KEY],
-                        onDelete=self.remove_history_action,
-                    )
-        
-        # Put the long process of the browser trying to do stuff in the thread. 
-        execution_thread = threading.Thread(target=__processAction)
-        execution_thread.start()
+        try:
+            action.executeAction(driver=self.driver)
+        except Exception as e:
+            # Update the result label with error if there's an error
+            result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
+        else:
+            # Else, mark it as done.
+            result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
+        finally:
+            submit_button.config(state="normal")
+            if action.needToStore():
+                self.action_table.addHistoryActionRow(
+                    action=action,
+                    result_label=self.result_labels[HISTORY_ACTION_RESULT_KEY],
+                    onDelete=self.remove_history_action,
+                )
         
 
     # Start the application.

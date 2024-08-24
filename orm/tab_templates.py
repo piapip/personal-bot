@@ -98,23 +98,13 @@ class Template:
 
     def __remove_template_action(self, action: Action) -> None:
         self.actions.remove(action)
-
-
     
     
     # run_all executes all the actions of the template one by one.
     def run_all(self) -> None:
-        # TODO: Okay this is not really good.
-        # I need some indicator on each row that the row is being executed.
-        # So it means that I need another run_all function in the Scrollable table.
-        # The 0.25s sleep is fine though.
-        for action in self.actions:
-            action.executeAction(driver=self.driver)
-            # Remember that all of these actions must be executed one by one.
-            # If I have 10 actions,
-            # all 10 actions must be in the same thread, not 10 different threads.
-            # print("executing {}".format(action.action_type))
-            sleep(0.25)
+        # Maybe add some progress bar above.
+        execution_thread = threading.Thread(target=self.action_table.retriggerAll)
+        execution_thread.start()
             
 
 class TabTemplates:
@@ -204,12 +194,12 @@ class TabTemplates:
             new_template = Template(master=self.template_tabs_control, driver=self.driver)
             self.template_tabs_control.insert(index, child=new_template.main_ui, text=new_template.name)
             self.template_tabs_control.select(index)
+            self.templates.append(new_template)
 
     
     # __runAll run all the actions of the selected template.
     def __runAll(self) -> None:
         current_tab_index: int = self.template_tabs_control.index(self.template_tabs_control.select())
+        print("current_tab_index: ", current_tab_index)
         current_template = self.templates[current_tab_index]
-        
-        execution_thread = threading.Thread(target=current_template.run_all)
-        execution_thread.start()
+        current_template.run_all()
