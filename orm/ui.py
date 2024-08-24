@@ -4,6 +4,7 @@ from typing import Dict
 import threading
 import re
 import json
+from pathlib import Path
 
 from configs.ui_configs import (
     GUI_SIZE,
@@ -45,6 +46,12 @@ ENTRY_LABELS = [
 
 class UI:
     def __init__(self, driver:Driver) -> None:
+        # Make the history folder if not exists.
+        self.history_folder = "./history"
+        Path(self.history_folder).mkdir(parents=True, exist_ok=True)
+        self.history_filename = "dump.json"
+        self.save_file_name: str = self.history_folder + "/" + self.history_filename
+
         self.driver = driver
         self.root = Tk()
         SetStyle()
@@ -60,10 +67,10 @@ class UI:
         # TODO [14]: I can probably kill this thing?
         # It's already in the history and easily exportable.
         self.history_actions: list[Action] = [
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
+            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
@@ -79,7 +86,7 @@ class UI:
             # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
             # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
         ]
-        self.save_file_name: str = ""
+        self.loadHistory()
 
         tab_control = ttk.Notebook(master=self.root)
         tab_control.pack(expand=1, fill="both")
@@ -457,25 +464,30 @@ class UI:
     
     # save exports the history to json.
     def save(self) -> None:
-        from pathlib import Path
 
         print("Saving...")
         
-        # Make the history folder if not exists.
-        history_folder = "./history"
-        Path(history_folder).mkdir(parents=True, exist_ok=True)
-        filename = "dump"
-
-        # The actual saving.
-        if self.save_file_name == "":
-            if not re.match("[A-Za-z0-9-_]+", filename):
-                raise Exception("filename can only contains: alphabetical characters, numbers, -, _. Your filename: {}".format(filename))
-            self.save_file_name = history_folder + "/" + filename + ".json"
+        # # The actual saving.
+        # # Later 
+        # if self.save_file_name == "":
+        #     if not re.match("[A-Za-z0-9-_]+", self.history_filename):
+        #         raise Exception("filename can only contains: alphabetical characters, numbers, -, _. Your filename: {}".format(filename))
+        #     self.save_file_name = self.history_folder + "/" + self.history_filename
         
         with open(self.save_file_name, "w") as f:
             json.dump(self.history_actions, default=lambda o: o.encode(), indent=4, fp=f)
 
         print("Done...")
+    
+
+    # loadHistory loads the history stored in history/dump.json file.
+    def loadHistory(self):
+        with open(self.save_file_name, "r") as f:
+            actions: list[dict] = json.load(f)
+
+        # print("type: {} history data: {}".format(type(data[0]), data[0])) 
+        for action in actions:
+            self.history_actions.append(Action(**action))
 
 
     def remove_history_action(self, action:Action) -> None:

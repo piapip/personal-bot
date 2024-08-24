@@ -9,7 +9,16 @@ class ActionType(StrEnum):
     SWITCH_TAB = "Switch tab"
 
 class Action:
-    def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
+    def __init__(
+            self,
+            action_type:ActionType,
+            name: str,
+            css: str,
+            value: str,
+            tab_index: int,
+            # Normally, we don't need to provide failed_reason,
+            # I need to initiate it so Python can translate from dict to class. 
+            failed_reason: str = "not execute yet!") -> None:
         # This __id will be used for differentiating rows.
         # The History tab's remove button performs removal by value.
         # So in case if there are 2 actions with identical values,
@@ -26,7 +35,7 @@ class Action:
         self.css: str = css
         self.value: str = value
         self.tab_index: int = tab_index
-        self.failed_reason: str = "not execute yet!"
+        self.failed_reason: str = failed_reason
 
     
     def __str__(self) -> str:
