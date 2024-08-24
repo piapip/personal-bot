@@ -26,9 +26,12 @@ from selenium.webdriver.remote.webelement import WebElement
 from typing import List
 
 class Driver:
-    def __init__(self, dry_run=bool) -> None:
+    def __init__(self, dry_run: bool, high_light_mode: bool) -> None:
+        self.high_light_mode=high_light_mode
+
         if dry_run:
             self.dry_run=True
+            self.high_light_mode=False
             print("Initiate dry browser...")
             return
         print("Initiating Firefox browser. Please wait...")
@@ -205,6 +208,9 @@ class Driver:
 
     @__check_dry_run
     def highLightElements(self, elements: List[WebElement]):
+        if not self.high_light_mode:
+            return
+        
         def moveToView(element: WebElement):
             self.driver.execute_script("arguments[0].scrollIntoView();", element)
 
