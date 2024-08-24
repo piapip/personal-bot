@@ -217,9 +217,23 @@ class HistoryActionRow:
         self.onDeleteCallback(self.action)
 
 class ScrollableActionTable:
-    def __init__(self, master: tk.Frame, driver: Driver) -> None:
+    def __init__(
+        self,
+        master: tk.Frame,
+        driver: Driver,
+        result_label: tk.Label,
+        onDelete: Callable[[Action], None],
+        enable_add_row_button: bool = False) -> None:
+        """
+        :master: tk.Frame: The Frame where the Table will be placed.
+        :driver: orm.driver.Driver: The mock browser that run the automation command from the table.
+        :result_label: tk.Label: The label that shows the result of the automation command.
+        :onDelete: func() -> None: The function to do when the row is deleted. (aka callback on row deletion)
+        """
         self.master = master
         self.driver = driver
+        self.onDelete: Callable[[Action], None] = onDelete
+        self.result_label: tk.Label = result_label
         self.headers: list[TableHeader] = []
         self.rows: list[HistoryActionRow] = []
 
@@ -243,6 +257,11 @@ class ScrollableActionTable:
         self.history_table_frame.bind("<Configure>", self.__onFrameConfigure)
         self.main_canvas.bind("<Configure>", self.__updateCanvansFrameWidth)
 
+        if enable_add_row_button:
+            self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newRow)
+            self.add_row_button.grid(row=9995, column=5, sticky=tk.E + tk.W)
+
+
     # setHeaders renders the table header.
     def setHeaders(self, headers: List[TableHeader]) -> None:
         self.headers = headers
@@ -258,8 +277,6 @@ class ScrollableActionTable:
     def addHistoryActionRow(
             self,
             action: Action,
-            result_label: tk.Label,
-            onDelete: Callable[[Action], None],
         ) -> None:
         """
         :result_label: tk.Label: the label where the action shows the automation result.
@@ -270,8 +287,8 @@ class ScrollableActionTable:
             action=action,
             action_index=len(self.rows),
             driver=self.driver,
-            result_label=result_label,
-            onDelete=onDelete,
+            result_label=self.result_label,
+            onDelete=self.onDelete,
         )
 
         self.rows.append(action_row)
@@ -295,5 +312,25 @@ class ScrollableActionTable:
     def retriggerAll(self) -> None:
         for row in self.rows:
             row.retriggerHistoryAction()
-            sleep(0.25)
-            
+            sleep(0.5)
+
+
+    # newRow add a new row to the template. 
+    def newRow(self) -> None:
+        action_row = HistoryActionRow(
+            master=self.history_table_frame,
+            action=Action(
+                name="",
+                action_type="",
+                css="",
+                failed_reason="",
+                tab_index=0,
+                value="",
+            ),
+            action_index=len(self.rows),
+            driver=self.driver,
+            result_label=self.result_label,
+            onDelete=self.onDelete,
+        )
+
+        self.rows.append(action_row)

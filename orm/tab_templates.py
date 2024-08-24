@@ -67,7 +67,12 @@ class Template:
 
         # [2]
         # Now actually filling in the table of the middle_frame.
-        self.action_table: ScrollableActionTable = ScrollableActionTable(master=self.middle_frame, driver=self.driver)
+        self.action_table: ScrollableActionTable = ScrollableActionTable(
+            master=self.middle_frame,
+            driver=self.driver,
+            onDelete=self.__remove_template_action,
+            result_label=self.result_label,
+            enable_add_row_button=True)
 
         # [2.1.]
         # Start with the header.
@@ -89,11 +94,7 @@ class Template:
         for action in self.actions:
             # Closure problem with python.
             # It's long, I noted it somewhere else in this repo.
-            self.action_table.addHistoryActionRow(
-                action=action,
-                result_label=self.result_label,
-                onDelete=self.__remove_template_action,
-            )
+            self.action_table.addHistoryActionRow(action=action)
 
 
     def __remove_template_action(self, action: Action) -> None:

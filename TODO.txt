@@ -30,3 +30,9 @@
      How's that?
 
 [16] Update action before saving.
+
+[17] VERY IMPORTANT!!!
+     Remove all list storing actions. Refer to row instead.
+     The Remove feature is breaking because of that.
+     Also can't save the template because the template's 
+     actions are not updated on adding new row.

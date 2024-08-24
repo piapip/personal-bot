@@ -230,7 +230,12 @@ class UI:
 
         # [2.]
         # Now actually filling in the table of the main content.
-        self.action_table: ScrollableActionTable = ScrollableActionTable(master=main_content_frame, driver=self.driver)
+        self.action_table: ScrollableActionTable = ScrollableActionTable(
+            master=main_content_frame,
+            driver=self.driver,
+            result_label=result_label,
+            onDelete=self.remove_history_action,
+            enable_add_row_button=False)
         
         # [2.1.]
         # Start with the header.
@@ -273,12 +278,8 @@ class UI:
             # By calling addHistoryActionRow with all the parameter name defined,
             # I accidentally lock the i value without knowing :3
             # In the example, is the action that is locked.
-            # action_table.addHistoryActionRow(..., action=self.history_actions[i], ...)
-            self.action_table.addHistoryActionRow(
-                action=self.history_actions[i],
-                result_label=result_label,
-                onDelete=self.remove_history_action,
-            )
+            # action_table.addHistoryActionRow(action=self.history_actions[i])
+            self.action_table.addHistoryActionRow(action=self.history_actions[i])
 
         # TODO [3]: - Add save(export)/import option for the History tab.
         self.tab_control.add(child=history_tab, text="History")
@@ -429,11 +430,7 @@ class UI:
         finally:
             submit_button.config(state="normal")
             if action.needToStore():
-                self.action_table.addHistoryActionRow(
-                    action=action,
-                    result_label=self.result_labels[HISTORY_ACTION_RESULT_KEY],
-                    onDelete=self.remove_history_action,
-                )
+                self.action_table.addHistoryActionRow(action=action)
         
 
     # Start the application.

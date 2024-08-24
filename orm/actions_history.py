@@ -109,8 +109,8 @@ class Action:
     # so remember to use thread to call this function.
     def executeAction(self, driver: Driver) -> None:
         from helpers.action import sleep
-
-        sleep(1.5)
+        if driver.dry_run:
+            sleep(0.5)
 
         try:
             match self.action_type:
