@@ -482,12 +482,17 @@ class UI:
 
     # loadHistory loads the history stored in history/dump.json file.
     def loadHistory(self):
-        with open(self.save_file_name, "r") as f:
-            actions: list[dict] = json.load(f)
+        try:
+            with open(self.save_file_name, "r") as f:
+                actions: list[dict] = json.load(f)
 
-        # print("type: {} history data: {}".format(type(data[0]), data[0])) 
-        for action in actions:
-            self.history_actions.append(Action(**action))
+            # print("type: {} history data: {}".format(type(data[0]), data[0])) 
+            for action in actions:
+                self.history_actions.append(Action(**action))
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            raise(e)
 
 
     def remove_history_action(self, action:Action) -> None:
