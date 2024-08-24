@@ -8,6 +8,7 @@
     [OK] Add the table to the template.
     Add the timer.
     Add the progressbar.
+    [OK] Store the template.
     [OK] Add the "Add step" button.
     [OK] Run everything.
 
@@ -26,3 +27,5 @@
        renderActionForActionsTab...
        renderActionForHistoryTab...
      How's that?
+
+[20] Enable the Switch tab for History and Template.
