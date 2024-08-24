@@ -1,12 +1,12 @@
 from tkinter import ttk, simpledialog
 import tkinter as tk
 import threading
+from pathlib import Path
+from typing import List
+import os
+import re
 
 from orm.driver import Driver
-from orm.actions_history import (
-    ActionType,
-    Action,
-)
 from orm.scrollable_table import (
     TableHeader,
     ScrollableActionTable,
@@ -15,31 +15,10 @@ from orm.scrollable_table import (
 from helpers.action import sleep
 
 class Template:
-    def __init__(self, master: ttk.Notebook, driver: Driver) -> None:
+    def __init__(self, master: ttk.Notebook, driver: Driver, name: str) -> None:
         self.master: ttk.Notebook = master
-        self.name: str = "New template"
+        self.name: str = name
         self.driver: Driver = driver
-
-        # self.actions: list[Action] = [
-        #     Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-        #     # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        # ]
         
         self.main_ui: tk.Frame = tk.Frame(master=master)
         # The default content of the template tab.
@@ -50,7 +29,9 @@ class Template:
         #      therefore, it would be to the top, and each template will have its own result_label.
         #   2. Middle part containing all the actions.
         #      2.1. Start with the header.
-        #      2.2. Fill up the actions.
+        #      2.2. Normally, template would start on an empty slate.
+        #           Later, when the user stores templates,
+        #           the content will be rendered by importing file via the action_table. 
 
         # Initiate top and the middle part.
         # Just in case, this Template's top_frame and middle_frame is 
@@ -73,8 +54,6 @@ class Template:
             result_label=self.result_label,
             enable_add_row_button=True)
 
-        # [2.1.]
-        # Start with the header.
         headers: list[TableHeader] = [
             TableHeader(text="", weight=1),                # Column for the play button.
             TableHeader(text="Action", weight=1),          # Column for the action.
@@ -85,26 +64,23 @@ class Template:
         ]
 
         self.action_table.setHeaders(headers=headers)
-
-        # [2.2.]
-        # Then fill up the actions.
-        # Render the list of the actions to the table.
-
-        # for action in self.actions:
-        #     self.action_table.addHistoryActionRow(action=action)
     
     
-    # run_all executes all the actions of the template one by one.
-    def run_all(self) -> None:
+    # run executes all the actions of the template one by one.
+    def run(self) -> None:
         # Maybe add some progress bar above.
         execution_thread = threading.Thread(target=self.action_table.retriggerAll)
         execution_thread.start()
-            
+
 
 class TabTemplates:
     def __init__(self, master: ttk.Notebook, driver: Driver) -> None:
         self.master: ttk.Notebook = master
         self.driver: Driver = driver
+        
+        # Make the template folder if not exists.
+        self.history_folder = "./templates"
+        Path(self.history_folder).mkdir(parents=True, exist_ok=True)
 
         # main_ui contains everything of this tab.
         self.main_ui = tk.Frame(master=master)
@@ -122,10 +98,13 @@ class TabTemplates:
         self.middle_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         # [1] Set up buttons for the top_frame.
-        self.save_button = tk.Button(master=self.top_frame, text="Run all", width="6", command=self.__runAll)
+        self.save_button = tk.Button(master=self.top_frame, text="Run", width="6", command=self.__runTemplate)
         self.save_button.pack(side=tk.LEFT)
 
-        self.save_button = tk.Button(master=self.top_frame, text="Save", width="6")
+        self.save_button = tk.Button(master=self.top_frame, text="Run All", width="6")
+        self.save_button.pack(side=tk.LEFT)
+
+        self.save_button = tk.Button(master=self.top_frame, text="Save", width="6", command=self.__saveCurrentTemplate)
         self.save_button.pack(side=tk.LEFT)
 
         self.save_all_button = tk.Button(master=self.top_frame, text="Save all", width="6")
@@ -151,9 +130,7 @@ class TabTemplates:
         # like how we do in the browser.
         
         # [2.1.]
-        starting_template: Template = Template(master=self.template_tabs_control, driver=self.driver)
-        self.template_tabs_control.add(child=starting_template.main_ui, text=starting_template.name)
-        self.templates.append(starting_template)
+        self.load()
 
         # [2.2.] https://stackoverflow.com/questions/71859022/tkinter-notebook-create-new-tabs-by-clicking-on-a-plus-tab-like-every-web-brow
         self.template_tabs_control.bind(sequence="<<NotebookTabChanged>>", func=self.__onAddTabClick)
@@ -169,7 +146,19 @@ class TabTemplates:
             title="New tab name",
             prompt="Please enter the tab name").strip()
         if response is not None and response != "":
+            # Change the name on the UI
             self.template_tabs_control.tab(self.template_tabs_control.select(), text=response)
+            # Then change the name of the file that stored the data.
+            current_tab_index: int = self.template_tabs_control.index(self.template_tabs_control.select())
+            current_template: Template = self.templates[current_tab_index]
+            
+            current_template_file_name = self.history_folder + "/" + str(current_tab_index) + "_" + current_template.name + ".json"
+            template_json_file = Path(current_template_file_name)
+            if template_json_file.is_file():
+                new_template_file_name = self.history_folder + "/" + str(current_tab_index) + "_" + response + ".json"
+                os.rename(current_template_file_name, new_template_file_name)
+            
+            current_template.name = response
 
     
     # __onAddTabClick checked if the users click on the <<New tab icon>> (aka the last tab).
@@ -185,15 +174,46 @@ class TabTemplates:
         
         if selected_tab == new_tab_icon:
             index = len(self.template_tabs_control.tabs()) - 1
-            new_template = Template(master=self.template_tabs_control, driver=self.driver)
+            template_name = "Template {}".format(index + 1)
+            new_template = Template(master=self.template_tabs_control, driver=self.driver, name=template_name)
             self.template_tabs_control.insert(index, child=new_template.main_ui, text=new_template.name)
             self.template_tabs_control.select(index)
             self.templates.append(new_template)
 
     
-    # __runAll run all the actions of the selected template.
-    def __runAll(self) -> None:
+    # __runTemplate run all the actions of the selected template.
+    def __runTemplate(self) -> None:
         current_tab_index: int = self.template_tabs_control.index(self.template_tabs_control.select())
-        print("current_tab_index: ", current_tab_index)
-        current_template = self.templates[current_tab_index]
-        current_template.run_all()
+        current_template: Template = self.templates[current_tab_index]
+        current_template.run()
+
+
+    # __saveCurrentTemplate exports the current selected template to json.
+    def __saveCurrentTemplate(self) -> None:
+        # TODO [19]: Duplicated template's name won't crash the saving process.
+        # It can be done by exporting this into dict (map ID -> actual Template)
+        # ID will be the diffentiator now.
+        # Though, that'll make the import feature kinda annoying, because I'll need to merge 2 json files.
+        current_tab_index: int = self.template_tabs_control.index(self.template_tabs_control.select())
+        current_template: Template = self.templates[current_tab_index]
+        
+        filename = self.history_folder + "/" + str(current_tab_index) + "_" + current_template.name + ".json"
+        current_template.action_table.save(filename=filename)
+
+
+    # load pulls all the templates from the previous attempts and put them to the screen.
+    def load(self) -> None:
+        filename_regex = "[0-9+]_(.*).json"
+        
+        for file in os.listdir(self.history_folder):
+            file_name = os.fsdecode(file)
+            template_name = re.search(pattern=filename_regex, string=file_name).group(1)
+            
+            template = Template(
+                master=self.template_tabs_control,
+                driver=self.driver,
+                name=template_name)
+            template.action_table.loadData(self.history_folder + "/" + file_name)
+            self.template_tabs_control.add(child=template.main_ui, text=template.name)
+            self.templates.append(template)
+

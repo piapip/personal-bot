@@ -59,7 +59,17 @@ class HistoryActionRow:
 
         # Replay button
         def replay_in_thread() -> None:
-            threading.Thread(target=self.retriggerHistoryAction).start()
+            def replay() -> None:
+                try:
+                    self.retriggerHistoryAction()
+                except Exception:
+                    # This Exception is mainly used for when we need to replay a lot of actions.
+                    # In that case, if I catch an Exception, I'll stop replay the incoming action,
+                    # but in this case, I only have 1 action, so this Exception can be safely ignored.
+                    # All type of data manipulation has been done by the main function with proper try catch there.
+                    return
+                
+            threading.Thread(target=replay).start()
 
         self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=replay_in_thread)
         self.replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
@@ -152,6 +162,7 @@ class HistoryActionRow:
         except Exception as e:
             # Update the result label with error if there's an error
             self.result_label.configure(background=FAILED_BG_COLOR, text=ResultText.FAILED.format(e))
+            raise(e)
         else:
             # Else, mark it as done.
             self.result_label.configure(background=SUCCESS_BG_COLOR, text=ResultText.SUCCESS)
@@ -306,8 +317,12 @@ class ScrollableActionTable:
     # retriggerAll takes a lot of time to execute so it needs to be put into a thread!
     def retriggerAll(self) -> None:
         for row in self.rows:
-            row.retriggerHistoryAction()
-            sleep(0.5)
+            try:
+                row.retriggerHistoryAction()
+            except Exception:
+                break
+            finally:
+                sleep(0.5)
 
 
     # newEmptyRow add a new row to the template. 
@@ -389,7 +404,7 @@ class ScrollableActionTable:
         with open(filename, "w") as f:
             json.dump(actions, default=lambda o: o.encode(), indent=4, fp=f)
         
-        print("Done...")
+        print("Done saving...")
 
 
     # __removeRow removes the row after destroying all the widgets related to that row on the UI.

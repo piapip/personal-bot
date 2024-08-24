@@ -2,8 +2,6 @@ from tkinter import Tk, ttk
 import tkinter as tk
 from typing import Dict
 import threading
-import re
-import json
 from pathlib import Path
 
 from configs.ui_configs import (
@@ -50,7 +48,7 @@ class UI:
         Path(self.history_folder).mkdir(parents=True, exist_ok=True)
         self.history_filename = "dump.json"
         self.save_file_name: str = self.history_folder + "/" + self.history_filename
-
+        
         self.driver = driver
         self.root = Tk()
         SetStyle()
