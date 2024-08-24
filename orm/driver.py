@@ -9,6 +9,10 @@ from configs.automation_configs import (
     ELEMENT_LOADING_TIMEOUT,
     USERNAME,
     PASSWORD,
+
+    HIGHLIGHT_ELEMENT_BORDER,
+    HIGHLIGHT_ELEMENT_COLOR,
+    HIGHLIGHT_ELEMENT_DURATION,
 )
 from helpers.action import (
     sleep,
@@ -19,6 +23,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
+from typing import List
 
 class Driver:
     def __init__(self, dry_run=bool) -> None:
@@ -83,6 +88,7 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again.
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
+            self.highLightElements(elements=[elem])
         except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
@@ -112,6 +118,7 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again.
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+            self.highLightElements(elements=[elem])
         except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
@@ -141,6 +148,7 @@ class Driver:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+            self.highLightElements(elements=elements)
         except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
@@ -193,3 +201,19 @@ class Driver:
     def close(self):
         # self.driver.close() # this only close 1 tab.
         self.driver.quit()
+
+
+    @__check_dry_run
+    def highLightElements(self, elements: List[WebElement]):
+        def moveToView(element: WebElement):
+            self.driver.execute_script("arguments[0].scrollIntoView();", element)
+
+        def applyStyle(element: WebElement, style: str):
+            self.driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, style)
+        
+        for element in elements:
+            original_style = element.get_attribute('style')
+            moveToView(element=element)
+            applyStyle(element=element, style="border: {}px solid {};".format(HIGHLIGHT_ELEMENT_BORDER, HIGHLIGHT_ELEMENT_COLOR))
+            sleep(HIGHLIGHT_ELEMENT_DURATION)
+            applyStyle(element=element, style=original_style)

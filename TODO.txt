@@ -29,3 +29,5 @@
      How's that?
 
 [16] Update action before saving.
+
+[17] Add highlight action
