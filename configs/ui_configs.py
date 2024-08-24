@@ -26,6 +26,8 @@ class ResultText(StrEnum):
 ################################################
 # HISTORY TABLE
 EXECUTE_BUTTON_KEY = "Execute button key"
+# the default error message for the action that is not executed yet. 
+DEFAULT_FAILED_RESULT = "not execute yet!"
 ################################################
 # PROGRESS BACKGROUND COLOR
 IN_PROGRESS_BG_COLOR = "#f3e96c"

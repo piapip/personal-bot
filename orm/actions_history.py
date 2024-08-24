@@ -2,6 +2,8 @@ from enum import StrEnum
 from orm.driver import Driver
 # from uuid import uuid4, UUID
 
+from configs.ui_configs import DEFAULT_FAILED_RESULT
+
 class ActionType(StrEnum):
     CLICK_BY_NAME = "Click by name"
     CLICK_BY_SELECTOR = "Click by selector"
@@ -18,7 +20,7 @@ class Action:
             tab_index: int,
             # Normally, we don't need to provide failed_reason,
             # I need to initiate it so Python can translate from dict to class. 
-            failed_reason: str = "not execute yet!") -> None:
+            failed_reason: str = DEFAULT_FAILED_RESULT) -> None:
         # This __id will be used for differentiating rows.
         # The History tab's remove button performs removal by value.
         # So in case if there are 2 actions with identical values,
@@ -144,7 +146,7 @@ class Action:
         else:
             self.failed_reason = ""
         finally:
-            print("executed: {}".format(self))
+            print("executed:\n{}".format(self))
         
         # If the action reaches to the end without any problem, then mark it as successful.
         self.failed_reason = ""

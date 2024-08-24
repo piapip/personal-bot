@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import List, Callable
 import threading
+import json
+import re
 
 from orm.driver import Driver
 from orm.actions_history import (
@@ -12,6 +14,7 @@ from helpers.ui import StyledEntry
 from helpers.action import sleep
 from configs.ui_configs import (
     ResultText,
+    DEFAULT_FAILED_RESULT,
     IN_PROGRESS_BG_COLOR,
     FAILED_BG_COLOR,
     SUCCESS_BG_COLOR,
@@ -31,7 +34,7 @@ class HistoryActionRow:
             action: Action,
             action_index: int,
             result_label: tk.Label,
-            onDelete: Callable[[Action], None],
+            onDeleteCallback: Callable[[Action], None],
         ) -> None:
         """
         Calling ActionRow will do create an instance of ActionRow, also render it on the screen.
@@ -41,14 +44,14 @@ class HistoryActionRow:
         :action_index: should not be used for any serious logic.
         :result_label: tk.Label: the label where the action shows the automation result.
         :driver: orm.driver.Driver: the browser where the automation will be executed.
-        :onDelete: is the function that will be executed when the row is deleted.
+        :onDeleteCallback: is the function that will be executed when the row is deleted.
         """
         self.master: tk.Frame = master
         self.driver: Driver = driver
         self.action_index: int = action_index
         self.action: Action = action
         self.result_label: tk.Label = result_label
-        self.onDeleteCallback: Callable[[Action], None] = onDelete
+        self.onDeleteCallback: Callable[[HistoryActionRow], None] = onDeleteCallback
 
         # I intentionally keep the cell separately instead of grouping them under the same widget
         # so I have rooms for customization if needed to.
@@ -126,7 +129,7 @@ class HistoryActionRow:
         
         if has_new_change:
             # Reset the previous attempt's failed reason if the action has any change.
-            self.action.failed_reason = "not execute yet!"
+            self.action.failed_reason = DEFAULT_FAILED_RESULT
 
 
     def retriggerHistoryAction(self) -> None:
@@ -154,7 +157,6 @@ class HistoryActionRow:
             self.result_label.configure(background=SUCCESS_BG_COLOR, text=ResultText.SUCCESS)
         finally:
             self.unfreeze()
-            # print("stored action: {}".format(self.history_actions[action_index]))
 
     
     # freeze disables the run and the remove button
@@ -178,6 +180,9 @@ class HistoryActionRow:
     def __onUpdateHistoryActionType(self, action_type: str) -> None:
         """onUpdateHistoryActionType updates the history action's action_type
         and re-render the data blurring."""
+        if self.action.action_type != action_type:
+            self.action.failed_reason = DEFAULT_FAILED_RESULT
+
         self.action.action_type = action_type
 
         # Disable all the entries of the row.
@@ -214,7 +219,7 @@ class HistoryActionRow:
         self.remove_button.destroy()
 
         # Perform any necessary callback like removing data from the history list.
-        self.onDeleteCallback(self.action)
+        self.onDeleteCallback(self)
 
 class ScrollableActionTable:
     def __init__(
@@ -222,17 +227,14 @@ class ScrollableActionTable:
         master: tk.Frame,
         driver: Driver,
         result_label: tk.Label,
-        onDelete: Callable[[Action], None],
         enable_add_row_button: bool = False) -> None:
         """
         :master: tk.Frame: The Frame where the Table will be placed.
         :driver: orm.driver.Driver: The mock browser that run the automation command from the table.
         :result_label: tk.Label: The label that shows the result of the automation command.
-        :onDelete: func() -> None: The function to do when the row is deleted. (aka callback on row deletion)
         """
         self.master = master
         self.driver = driver
-        self.onDelete: Callable[[Action], None] = onDelete
         self.result_label: tk.Label = result_label
         self.headers: list[TableHeader] = []
         self.rows: list[HistoryActionRow] = []
@@ -258,7 +260,7 @@ class ScrollableActionTable:
         self.main_canvas.bind("<Configure>", self.__updateCanvansFrameWidth)
 
         if enable_add_row_button:
-            self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newRow)
+            self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newEmptyRow)
             self.add_row_button.grid(row=9995, column=5, sticky=tk.E + tk.W)
 
 
@@ -274,21 +276,14 @@ class ScrollableActionTable:
 
     # addHistoryActionRow adds an action row to the list.
     # It will also render the row to the screen.
-    def addHistoryActionRow(
-            self,
-            action: Action,
-        ) -> None:
-        """
-        :result_label: tk.Label: the label where the action shows the automation result.
-        :onDelete: is the function that will be executed when the row is deleted.
-        """
+    def addHistoryActionRow(self, action: Action) -> None:
         action_row = HistoryActionRow(
             master=self.history_table_frame,
             action=action,
             action_index=len(self.rows),
             driver=self.driver,
             result_label=self.result_label,
-            onDelete=self.onDelete,
+            onDeleteCallback=self.__removeRow,
         )
 
         self.rows.append(action_row)
@@ -315,8 +310,8 @@ class ScrollableActionTable:
             sleep(0.5)
 
 
-    # newRow add a new row to the template. 
-    def newRow(self) -> None:
+    # newEmptyRow add a new row to the template. 
+    def newEmptyRow(self) -> None:
         action_row = HistoryActionRow(
             master=self.history_table_frame,
             action=Action(
@@ -330,7 +325,74 @@ class ScrollableActionTable:
             action_index=len(self.rows),
             driver=self.driver,
             result_label=self.result_label,
-            onDelete=self.onDelete,
+            onDeleteCallback=self.__removeRow,
         )
 
         self.rows.append(action_row)
+
+
+    # loadData reads data from the JSON file
+    # and fill up the table with rows.
+    def loadData(self, filename: str) -> None:
+        try:
+            with open(filename, "r") as f:
+                actions: list[dict] = json.load(f)
+
+            for action in actions:
+                # Closure problem with python.
+                # If I ever need to lock this i value, like how Go used to do "i:=i"
+                # This is how python locks value.
+                # 
+                # for i in range(len(actions)):
+                #     def run_action(i = i):
+                #         try: 
+                #             self.executeAction(self.history_actions[i])
+                #         except Exception as e:
+                #             print("Exception: {}".format(e))
+                # 
+                # If I do this instead:
+                # 
+                # for i in range(5):
+                #     def run_action():
+                #         index = i
+                #         self.executeAction(self.history_actions[i])
+                # 
+                # Then. the "index" will take "i"'s reference instead of the "i" current value,
+                # and the click_me function would refer to the last item.
+                # Go is fine with this value locking, but not Python.
+                # (Go lock by make a new reference pointing taking the same value, by reinitiating the variable using ":=")
+                # 
+                # By calling addHistoryActionRow with all the parameter name defined,
+                # I accidentally lock the i value without knowing :3
+                # In the example, is the action that is locked.
+                # action_table.addHistoryActionRow(action=self.history_actions[i])
+                self.addHistoryActionRow(action=Action(**action))
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            raise(e)
+        pass
+
+
+    # save exports the table to json.
+    def save(self, filename: str) -> None:
+        print("Saving...")
+
+        # Update current rows from the UI and then
+        # extract actions from all the rows.
+        actions: list[Action] = []
+        for row in self.rows:
+            row.updateAction()
+            actions.append(row.action)
+        
+        # Extract actions from all the rows.
+        with open(filename, "w") as f:
+            json.dump(actions, default=lambda o: o.encode(), indent=4, fp=f)
+        
+        print("Done...")
+
+
+    # __removeRow removes the row after destroying all the widgets related to that row on the UI.
+    # This will be passed around as the callback function. 
+    def __removeRow(self, row: HistoryActionRow) -> None:
+        self.rows.remove(row)        

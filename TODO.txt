@@ -8,18 +8,16 @@
     [OK] Add the table to the template.
     Add the timer.
     Add the progressbar.
-    Add the "Add step" button.
+    [OK] Add the "Add step" button.
     [OK] Run everything.
 
-[10] Click by value with HTML .
+[10] Click by value with HTML.
 
 [11] Hotkey for the rename?
 
 [12] Hotkey for the add new tab (ctrl T)?
 
 [13] Put all the cell under the same widget or let the caller render the cell by itself. 
-
-[14] Don't let the UI handle the history_actions.
 
 [15] Maybe I can put the UI component into the Action object.
      Like instead of storing name, value, css,
@@ -28,11 +26,3 @@
        renderActionForActionsTab...
        renderActionForHistoryTab...
      How's that?
-
-[16] Update action before saving.
-
-[17] VERY IMPORTANT!!!
-     Remove all list storing actions. Refer to row instead.
-     The Remove feature is breaking because of that.
-     Also can't save the template because the template's 
-     actions are not updated on adding new row.

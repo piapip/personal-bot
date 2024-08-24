@@ -62,15 +62,6 @@ class UI:
         self.selected_option_boxes: Dict[str, str] = {}
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
-        
-        # TODO [14]: I can probably kill this thing?
-        # It's already in the history and easily exportable.
-        self.history_actions: list[Action] = [
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        ]
-        self.loadHistory()
 
         tab_control = ttk.Notebook(master=self.root)
         tab_control.pack(expand=1, fill="both")
@@ -234,7 +225,6 @@ class UI:
             master=main_content_frame,
             driver=self.driver,
             result_label=result_label,
-            onDelete=self.remove_history_action,
             enable_add_row_button=False)
         
         # [2.1.]
@@ -249,37 +239,10 @@ class UI:
         ]
 
         self.action_table.setHeaders(headers=headers)
-        
+
         # [2.2.]
         # Then fill up the actions.
-        # Render the list of the actions to the table.
-        for i in range(len(self.history_actions)):
-            # Closure problem with python. [EXPLAIN]
-            # If I ever need to lock this i value, like how Go used to do "i:=i"
-            # This is how python locks value.
-            # 
-            # def run_action(i = i):
-            #     try: 
-            #         self.executeAction(self.history_actions[i])
-            #     except Exception as e:
-            #         print("Exception: {}".format(e))
-            # 
-            # If I do this instead:
-            # 
-            # def run_action():
-            #     index = i
-            #     self.executeAction(self.history_actions[i])
-            # 
-            # Then. the "index" will take "i"'s reference instead of the "i" current value,
-            # and the click_me function would refer to the last item.
-            # Go is fine with this value locking, but not Python.
-            # (Go lock by make a new reference pointing taking the same value, by reinitiating the variable using ":=")
-            # 
-            # By calling addHistoryActionRow with all the parameter name defined,
-            # I accidentally lock the i value without knowing :3
-            # In the example, is the action that is locked.
-            # action_table.addHistoryActionRow(action=self.history_actions[i])
-            self.action_table.addHistoryActionRow(action=self.history_actions[i])
+        self.action_table.loadData(self.save_file_name)
 
         # TODO [3]: - Add save(export)/import option for the History tab.
         self.tab_control.add(child=history_tab, text="History")
@@ -410,7 +373,7 @@ class UI:
             return
 
         if action.needToStore():
-            self.history_actions.append(action)
+            self.action_table.addHistoryActionRow(action=action)
 
         # Update the result bar to yellow hinting that it's running. 
         result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
@@ -429,8 +392,6 @@ class UI:
             result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
         finally:
             submit_button.config(state="normal")
-            if action.needToStore():
-                self.action_table.addHistoryActionRow(action=action)
         
 
     # Start the application.
@@ -443,36 +404,5 @@ class UI:
     
     # save exports the history to json.
     def save(self) -> None:
+        self.action_table.save(self.save_file_name)
 
-        print("Saving...")
-        
-        # # The actual saving.
-        # # Later 
-        # if self.save_file_name == "":
-        #     if not re.match("[A-Za-z0-9-_]+", self.history_filename):
-        #         raise Exception("filename can only contains: alphabetical characters, numbers, -, _. Your filename: {}".format(filename))
-        #     self.save_file_name = self.history_folder + "/" + self.history_filename
-        
-        with open(self.save_file_name, "w") as f:
-            json.dump(self.history_actions, default=lambda o: o.encode(), indent=4, fp=f)
-
-        print("Done...")
-    
-
-    # loadHistory loads the history stored in history/dump.json file.
-    def loadHistory(self):
-        try:
-            with open(self.save_file_name, "r") as f:
-                actions: list[dict] = json.load(f)
-
-            # print("type: {} history data: {}".format(type(data[0]), data[0])) 
-            for action in actions:
-                self.history_actions.append(Action(**action))
-        except FileNotFoundError:
-            pass
-        except Exception as e:
-            raise(e)
-
-
-    def remove_history_action(self, action:Action) -> None:
-        self.history_actions.remove(action)
