@@ -120,13 +120,13 @@ class Driver:
     def getElementByCSS(self, selector: str) -> WebElement:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again.
         try:
-            elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+            elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=[elem])
         except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
             try:
-                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: " + selector)
+                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: {}".format(selector))
             except TimeoutException as timeoutEx:
                 raise Exception("not found element by css ({}): {}".format(selector, timeoutEx.msg))
             except Exception as e:
@@ -150,13 +150,13 @@ class Driver:
     def getElementByValue(self, selector: str, value: str) -> WebElement:
         # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
         try:
-            elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+            elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=elements)
         except TimeoutException:
             self.driver.refresh()
             sleep(RETRY_INTERVAL)
             try:
-                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: " + selector)
+                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             except TimeoutException as timeoutEx:
                 raise Exception("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
             except Exception as e:
@@ -198,6 +198,42 @@ class Driver:
             self.driver.switch_to.window(self.driver.window_handles[tab_index])
         except Exception as e:
             raise Exception("failed to switch tab to index {} due to: {}".format(tab_index, e))
+
+
+    @__check_dry_run
+    def getByAttribute(self, selector: str, value: str, attribute: str) -> WebElement:
+        # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
+        try:
+            elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
+            self.highLightElements(elements=elements)
+        except TimeoutException:
+            self.driver.refresh()
+            sleep(RETRY_INTERVAL)
+            try:
+                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
+            except TimeoutException as timeoutEx:
+                raise Exception("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
+            except Exception as e:
+                raise Exception("failed to list element by selector ({}): {}".format(selector, e))
+        except Exception as e:
+            raise Exception("failed to list element by selector ({}): {}".format(selector, e))
+        
+        for e in elements:
+            print("attribute: {}".format(e.get_attribute(attribute)))
+            if e.get_attribute(attribute) == value:
+                return e
+
+        raise Exception("selector ({}) - attribute ({}) - value ({}) not found".format(selector, attribute, value))
+    
+
+    @__check_dry_run
+    def clickByAttribute(self, selector: str, value: str, attribute: str) -> None:
+        print("executing click by attribute")
+        try:
+            self.getByAttribute(selector=selector, value=value, attribute=attribute).click()
+        
+        except Exception as e:
+            raise Exception("failed to click element by attribute ({}) due to: {}".format(selector, e))
 
 
     @__check_dry_run
