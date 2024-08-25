@@ -24,7 +24,6 @@ from orm.actions_history import (
     Action,
 )
 from orm.scrollable_table import (
-    TableHeader,
     ScrollableActionTable,
 )
 from orm.tab_templates import TabTemplates
@@ -226,22 +225,6 @@ class UI:
             result_label=result_label,
             enable_add_row_button=False)
         
-        # [2.1.]
-        # Start with the header.
-        headers: list[TableHeader] = [
-            TableHeader(text="", weight=1),                # Column for the play button.
-            TableHeader(text="Action", weight=1),          # Column for the action.
-            # TableHeader(text="Name", weight=4),          #
-            TableHeader(text="CSS Selector", weight=4),    #
-            TableHeader(text="Value", weight=4),           #
-            TableHeader(text="Tab Index", weight=4),       #
-            TableHeader(text="", weight=1),                # Column for the Remove button.
-        ]
-
-        self.action_table.setHeaders(headers=headers)
-
-        # [2.2.]
-        # Then fill up the actions.
         self.action_table.loadData(self.save_file_name)
 
         # TODO [3]: - Add save(export)/import option for the History tab.

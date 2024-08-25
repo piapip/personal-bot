@@ -32,23 +32,19 @@ class HistoryActionRow:
             master: tk.Frame,
             driver: Driver,
             action: Action,
-            action_index: int,
+            headers: List[TableHeader],
             result_label: tk.Label,
             onDeleteCallback: Callable[[Action], None],
         ) -> None:
         """
         Calling ActionRow will do create an instance of ActionRow, also render it on the screen.
 
-        :action_index: int: the index of the ACTION (not the row) in the entire history.
-        :action_index: is only here as a relative value compared to other row to decide the showing order.
-        :action_index: should not be used for any serious logic.
         :result_label: tk.Label: the label where the action shows the automation result.
         :driver: orm.driver.Driver: the browser where the automation will be executed.
         :onDeleteCallback: is the function that will be executed when the row is deleted.
         """
         self.master: tk.Frame = master
         self.driver: Driver = driver
-        self.action_index: int = action_index
         self.action: Action = action
         self.result_label: tk.Label = result_label
         self.onDeleteCallback: Callable[[HistoryActionRow], None] = onDeleteCallback
@@ -56,6 +52,10 @@ class HistoryActionRow:
         # I intentionally keep the cell separately instead of grouping them under the same widget
         # so I have rooms for customization if needed to.
         # I have no concrete design after all.
+
+        self.row_frame: tk.Frame = tk.Frame(master=master)
+        for i in range(len(headers)):
+            self.row_frame.grid_columnconfigure(index=i, weight=headers[i].weight, uniform="tag")
 
         # Replay button
         def replay_in_thread() -> None:
@@ -71,8 +71,8 @@ class HistoryActionRow:
                 
             threading.Thread(target=replay).start()
 
-        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=replay_in_thread)
-        self.replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
+        self.replay_button: tk.Button = tk.Button(master=self.row_frame, text="Run", anchor=tk.W, command=replay_in_thread)
+        self.replay_button.grid(row=0, column=0, sticky=tk.E + tk.W)
 
         # Action cell.
         options=(
@@ -85,40 +85,61 @@ class HistoryActionRow:
 
         self.selected_option = tk.StringVar()
         self.selected_option.set(action.action_type)
-        self.option_menu = tk.OptionMenu(master, self.selected_option, *options, command=self.__onUpdateHistoryActionType)
-        self.option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
+        self.option_menu = tk.OptionMenu(self.row_frame, self.selected_option, *options, command=self.__onUpdateHistoryActionType)
+        self.option_menu.grid(row=0, column=1, sticky=tk.E + tk.W)
 
         # # Name cell.
-        # self.name_entry: ttk.Entry = StyledEntry(master=master)
-        # self.name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
+        # self.name_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        # self.name_entry.grid(row=0, column=2, sticky=tk.E + tk.W)
         # self.name_entry.insert(tk.END, action.name) # Fill data
         # if not action.needName(): # Then check if I need to disable the entry
         #     self.name_entry.config(state="readonly")
 
         # CSS Selector cell.
-        self.css_selector_entry: ttk.Entry = StyledEntry(master=master)
-        self.css_selector_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
+        self.css_selector_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.css_selector_entry.grid(row=0, column=2, sticky=tk.E + tk.W)
         self.css_selector_entry.insert(tk.END, action.css) # Fill data
         if not action.needCSS(): # Then check if I need to disable the entry
             self.css_selector_entry.config(state="readonly")
 
         # Value cell.
-        self.value_entry: ttk.Entry = StyledEntry(master=master)
-        self.value_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
+        self.value_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.value_entry.grid(row=0, column=3, sticky=tk.E + tk.W)
         self.value_entry.insert(tk.END, action.value) # Fill data
         if not action.needValue(): # Then check if I need to disable the entry
             self.value_entry.config(state="readonly")
 
         # TabIndex cell.
-        self.tab_index_entry: ttk.Entry = StyledEntry(master=master)
-        self.tab_index_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
+        self.tab_index_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.tab_index_entry.grid(row=0, column=4, sticky=tk.E + tk.W)
         self.tab_index_entry.insert(tk.END, action.tab_index) # Fill data
         if not action.needTabIndex(): # Then check if I need to disable the entry
             self.tab_index_entry.config(state="readonly")
 
-        # Remove button cell.
-        self.remove_button: tk.Button = tk.Button(master=master, text="Remove", anchor=tk.W, command=self.__delete)
-        self.remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
+        # Reposition buttons
+        reposition_buttons_frame: tk.Frame = tk.Frame(master=self.row_frame, padx=1)
+        reposition_buttons_frame.grid(row=0, column=5, sticky=tk.E + tk.W)
+        # # Split the Reposition buttons frame into 2 parts equally.
+        reposition_buttons_frame.grid_columnconfigure(index=0, weight=1, uniform="tag")
+        reposition_buttons_frame.grid_columnconfigure(index=1, weight=1, uniform="tag")
+        self.move_up_button: tk.Button = tk.Button(master=reposition_buttons_frame)
+        # # Then put each buttons to the each part.
+        self.move_up_button: tk.Button = tk.Button(master=reposition_buttons_frame, text="↑")
+        self.move_up_button.grid(row=0, column=0, sticky=tk.E+tk.W)
+        self.move_down_button: tk.Button = tk.Button(master=reposition_buttons_frame, text="↓")
+        self.move_down_button.grid(row=0, column=1, sticky=tk.E+tk.W)
+
+        # Remove button cell. (always the last column)
+        self.remove_button: tk.Button = tk.Button(master=self.row_frame, text="Remove", anchor=tk.W, command=self.__delete)
+        self.remove_button.grid(row=0, column=len(headers)-1, sticky=tk.E + tk.W)
+
+
+    def updateOnMoveUp(self, onMoveUp: Callable[[], None]) -> None:
+        self.move_up_button.config(command=onMoveUp)
+
+
+    def updateOnMoveDown(self, onMoveDown: Callable[[], None]) -> None:
+        self.move_down_button.config(command=onMoveDown)    
 
 
     # updateAction updates its own content based on the content provided via the GUI.
@@ -236,20 +257,8 @@ class HistoryActionRow:
     def __delete(self) -> None:
         """__delete deletes the row in the History and remove it from the saved data.
         """
-        # TODO [13]: Put all of this under a frame or smt.
-        # Like a widget, so if I want to delete the entire row,
-        # I just need to call 1 "row.destroy()" instead of component one by one.
-        # Though I don't hate this one by one, easy for customization.
-    
         # Destroy all the widgets in the row.
-        # TODO [13]: Put all of this under a frame or smt.
-        self.replay_button.destroy()
-        self.option_menu.destroy()
-        # self.name_entry.destroy()
-        self.css_selector_entry.destroy()
-        self.value_entry.destroy()
-        self.tab_index_entry.destroy()
-        self.remove_button.destroy()
+        self.row_frame.destroy()
 
         # Perform any necessary callback like removing data from the history list.
         self.onDeleteCallback(self)
@@ -269,7 +278,6 @@ class ScrollableActionTable:
         self.master = master
         self.driver = driver
         self.result_label: tk.Label = result_label
-        self.headers: list[TableHeader] = []
         self.rows: list[HistoryActionRow] = []
 
         # Initiating the canvas for the scrollable table.
@@ -292,19 +300,25 @@ class ScrollableActionTable:
         self.history_table_frame.bind("<Configure>", self.__onFrameConfigure)
         self.main_canvas.bind("<Configure>", self.__updateCanvansFrameWidth)
 
+        self.headers: list[TableHeader] = [
+            TableHeader(text="", weight=3),                # Column for the play button.
+            TableHeader(text="Action", weight=12),         # Column for the action.
+            # TableHeader(text="Name", weight=15),         #
+            TableHeader(text="CSS Selector", weight=15),   #
+            TableHeader(text="Value", weight=15),          #
+            TableHeader(text="Tab Index", weight=6),       #
+            TableHeader(text="", weight=6),                # Column for the reposition buttons
+            TableHeader(text="", weight=5),                # Column for the Remove button.
+        ]
+
+        for i in range(len(self.headers)):
+            header = self.headers[i]
+            self.history_table_frame.grid_columnconfigure(index=i, weight=header.weight, uniform="tag")
+            tk.Label(master=self.history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
+        
         if enable_add_row_button:
             self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newEmptyRow)
-            self.add_row_button.grid(row=9995, column=5, sticky=tk.E + tk.W)
-
-
-    # setHeaders renders the table header.
-    def setHeaders(self, headers: List[TableHeader]) -> None:
-        self.headers = headers
-
-        for i in range(len(headers)):
-            header = headers[i]
-            self.history_table_frame.grid_columnconfigure(index=i, weight=header.weight)
-            tk.Label(master=self.history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
+            self.add_row_button.grid(row=9995, column=len(self.headers)-1, sticky=tk.E + tk.W)
 
 
     # addHistoryActionRow adds an action row to the list.
@@ -312,12 +326,23 @@ class ScrollableActionTable:
     def addHistoryActionRow(self, action: Action) -> None:
         action_row = HistoryActionRow(
             master=self.history_table_frame,
-            action=action,
-            action_index=len(self.rows),
             driver=self.driver,
+            action=action,
+            headers=self.headers,
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+
+        def onMoveUp() -> None:
+            self.moveRowUpBy(target_row=action_row, delta=1)
+        
+        def onMoveDown() -> None:
+            self.moveRowDownBy(target_row=action_row, delta=1)
+
+        # Spaghetti :')
+        action_row.updateOnMoveUp(onMoveUp=onMoveUp)
+        action_row.updateOnMoveDown(onMoveDown=onMoveDown)
+        action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
 
@@ -347,11 +372,13 @@ class ScrollableActionTable:
                 tab_index=0,
                 value="",
             ),
-            action_index=len(self.rows),
+            # action_index=len(self.rows),
+            headers=self.headers,
             driver=self.driver,
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+        action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
         # Scroll to the bottom after adding new row.
@@ -426,4 +453,65 @@ class ScrollableActionTable:
     # __removeRow removes the row after destroying all the widgets related to that row on the UI.
     # This will be passed around as the callback function. 
     def __removeRow(self, row: HistoryActionRow) -> None:
-        self.rows.remove(row)        
+        self.rows.remove(row)
+
+
+    # moveRowUpBy moves the row up by delta row on the table
+    # and then moves down all the passing through row by 1. 
+    # delta is expected to be greater than 0.
+    def moveRowUpBy(self, target_row: HistoryActionRow, delta: int) -> None:
+        if delta == 0:
+            return
+
+        current_index = self.rows.index(target_row)
+        if current_index - delta < 0:
+            return
+        
+        affected_rows = self.rows[current_index-delta:current_index]
+
+        # Move up the targeted row by delta.
+        target_row.row_frame.grid(
+            columnspan=len(self.headers),
+            row=current_index-delta+1, # +1 because the first line is the header.
+            sticky=tk.E+tk.W)
+
+        # Move down the passed through row by 1.
+        for i in range(len(affected_rows)):
+            row = affected_rows[i]
+            row.row_frame.grid(
+                columnspan=len(self.headers),
+                row=current_index-delta+i+1+1, # an extra +1 because the first line is the header.
+                sticky=tk.E+tk.W)
+
+        self.rows.remove(target_row)
+        self.rows.insert(current_index-delta, target_row)
+
+
+    # moveRowDownBy moves the row down by delta row on the table
+    # and then moves up all the passing through row by 1. 
+    # delta is expected to be greater than 0.
+    def moveRowDownBy(self, target_row: HistoryActionRow, delta: int) -> None:
+        if delta == 0:
+            return
+
+        current_index = self.rows.index(target_row)
+        if current_index + delta >= len(self.rows):
+            return
+        
+        affected_rows = self.rows[current_index+1:current_index+delta+1]
+        
+        # Move down the targeted row by delta.
+        target_row.row_frame.grid(
+            columnspan=len(self.headers),
+            row=current_index+delta+1, # There's +1 because the first row is the header.
+            sticky=tk.E+tk.W)
+        # Move up the passed through row by 1.
+        for i in range(len(affected_rows)):
+            row = affected_rows[i]
+            row.row_frame.grid(
+                columnspan=len(self.headers),
+                row=current_index+i+1, # There's +1 because the first row is the header.
+                sticky=tk.E+tk.W)
+
+        self.rows.remove(target_row)
+        self.rows.insert(current_index+delta, target_row)

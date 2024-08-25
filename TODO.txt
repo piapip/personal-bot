@@ -12,8 +12,6 @@
 
 [12] Hotkey for the add new tab (ctrl T)?
 
-[13] Put all the cell under the same widget or let the caller render the cell by itself. 
-
 [15] Maybe I can put the UI component into the Action object.
      Like instead of storing name, value, css,
      it will store the entries that provide those information...
@@ -21,3 +19,11 @@
        renderActionForActionsTab...
        renderActionForHistoryTab...
      How's that?
+
+[21] Check this video to do the drag and reposition: https://www.youtube.com/watch?v=uGmMsGOcBB0
+
+[22] There's some Spaghetti in the ScrollableActionTable.
+     It can be untangled by making the MoveUp/MoveDown button not depending on the HistoryActionRow.
+     But that will create more Spaghetti because my frontend skill sucks :').
+     Maybe this is not how I'm supposed to create a table on the UI.
+     But then, what's the proper approach?
