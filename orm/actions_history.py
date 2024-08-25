@@ -2,6 +2,8 @@ from enum import StrEnum
 from orm.driver import Driver
 # from uuid import uuid4, UUID
 
+from configs.ui_configs import DEFAULT_FAILED_RESULT
+
 class ActionType(StrEnum):
     CLICK_BY_NAME = "Click by name"
     CLICK_BY_SELECTOR = "Click by selector"
@@ -9,7 +11,16 @@ class ActionType(StrEnum):
     SWITCH_TAB = "Switch tab"
 
 class Action:
-    def __init__(self, action_type:ActionType, name: str, css: str, value: str, tab_index: int) -> None:
+    def __init__(
+            self,
+            action_type:ActionType,
+            name: str,
+            css: str,
+            value: str,
+            tab_index: int,
+            # Normally, we don't need to provide failed_reason,
+            # I need to initiate it so Python can translate from dict to class. 
+            failed_reason: str = DEFAULT_FAILED_RESULT) -> None:
         # This __id will be used for differentiating rows.
         # The History tab's remove button performs removal by value.
         # So in case if there are 2 actions with identical values,
@@ -26,7 +37,7 @@ class Action:
         self.css: str = css
         self.value: str = value
         self.tab_index: int = tab_index
-        self.failed_reason: str = ""
+        self.failed_reason: str = failed_reason
 
     
     def __str__(self) -> str:
@@ -82,9 +93,9 @@ class Action:
         True is we need to.
         False is we don't need to.
         """
-        return (self.action_type == ActionType.CLICK_BY_NAME or
-                self.action_type == ActionType.CLICK_BY_SELECTOR or
-                self.action_type == ActionType.CLICK_BY_VALUE)
+        return (self.action_type == ActionType.CLICK_BY_SELECTOR or
+                self.action_type == ActionType.CLICK_BY_VALUE or
+                self.action_type == ActionType.SWITCH_TAB)
 
 
     def hasError(self) -> bool:
@@ -100,8 +111,8 @@ class Action:
     # so remember to use thread to call this function.
     def executeAction(self, driver: Driver) -> None:
         from helpers.action import sleep
-
-        sleep(1.5)
+        if driver.dry_run:
+            sleep(2.5)
 
         try:
             match self.action_type:
@@ -132,8 +143,10 @@ class Action:
         except Exception as e:
             self.failed_reason = "{}".format(e)
             raise e
+        else:
+            self.failed_reason = ""
         finally:
-            print("executed: {}".format(self))
+            print("executed:\n{}".format(self))
         
         # If the action reaches to the end without any problem, then mark it as successful.
         self.failed_reason = ""

@@ -1,15 +1,13 @@
-from tkinter import Tk, ttk, simpledialog 
+from tkinter import Tk, ttk 
 import tkinter as tk
 from typing import Dict
 import threading
-import re
-import json
+from pathlib import Path
 
 from configs.ui_configs import (
     GUI_SIZE,
     ACTION_TAB_KEY,
     HISTORY_TAB_KEY,
-    TEMPLATE_TAB_KEY,
     NAME_ENTRY_KEY,
     CSS_SELECTOR_ENTRY_KEY,
     VALUE_ENTRY_KEY,
@@ -29,6 +27,7 @@ from orm.scrollable_table import (
     TableHeader,
     ScrollableActionTable,
 )
+from orm.tab_templates import TabTemplates
 from helpers.ui import (
     StyledEntry,
     SetStyle,
@@ -44,6 +43,12 @@ ENTRY_LABELS = [
 
 class UI:
     def __init__(self, driver:Driver) -> None:
+        # Make the history folder if not exists.
+        self.history_folder = "./history"
+        Path(self.history_folder).mkdir(parents=True, exist_ok=True)
+        self.history_filename = "dump.json"
+        self.save_file_name: str = self.history_folder + "/" + self.history_filename
+        
         self.driver = driver
         self.root = Tk()
         SetStyle()
@@ -55,30 +60,6 @@ class UI:
         self.selected_option_boxes: Dict[str, str] = {}
         self.result_labels: Dict[str, tk.Label] = {}
         self.buttons: Dict[str, tk.Button] = {}
-        
-        # TODO: I can probably kill this thing?
-        # It's already in the history and easily exportable.
-        self.history_actions: list[Action] = [
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_NAME, name="name 1", css="", value="", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_VALUE, name="", css="css2", value="value 2", tab_index=0),
-            # Action(action_type=ActionType.CLICK_BY_SELECTOR, name="", css="css3", value="", tab_index=0),
-        ]
-        self.save_file_name: str = ""
 
         tab_control = ttk.Notebook(master=self.root)
         tab_control.pack(expand=1, fill="both")
@@ -93,7 +74,7 @@ class UI:
         # Tab 3 for the templates for repetitive automation.
         self.__renderTemplateTab()
         
-        tab_control.select(self.frames[TEMPLATE_TAB_KEY])
+        tab_control.select(self.tab_templates.main_ui)
     
 
     def addTextInput(self, master_label:str, answer_label:str, text:str, disabled:bool):
@@ -173,7 +154,9 @@ class UI:
         self.result_labels[SINGLE_ACTION_RESULT_KEY] = result_label
 
         # Add the submit button to run the Automation on the browser (aka driver).
-        submit_button = tk.Button(master=action_tab, text="Execute", command=self.__submitButtonPressed)
+        def submit_in_thread() -> None:
+            threading.Thread(target=self.__submitButtonPressed).start()
+        submit_button = tk.Button(master=action_tab, text="Execute", command=submit_in_thread)
         submit_button.pack()
         self.buttons[EXECUTE_BUTTON_KEY] = submit_button
         
@@ -214,6 +197,7 @@ class UI:
             
             def savingProcess():
                 try:
+                    # TODO [16]: updateAction before saving. 
                     self.save()
                 except Exception as e:
                     print("failed to save: {}".format(e))
@@ -235,125 +219,37 @@ class UI:
 
         # [2.]
         # Now actually filling in the table of the main content.
-        self.action_table: ScrollableActionTable = ScrollableActionTable(master=main_content_frame, driver=self.driver)
+        self.action_table: ScrollableActionTable = ScrollableActionTable(
+            master=main_content_frame,
+            driver=self.driver,
+            result_label=result_label,
+            enable_add_row_button=False)
         
         # [2.1.]
         # Start with the header.
         headers: list[TableHeader] = [
             TableHeader(text="", weight=1),                # Column for the play button.
             TableHeader(text="Action", weight=1),          # Column for the action.
-            TableHeader(text="Name", weight=4),            #
+            # TableHeader(text="Name", weight=4),          #
             TableHeader(text="CSS Selector", weight=4),    #
             TableHeader(text="Value", weight=4),           #
+            TableHeader(text="Tab Index", weight=4),       #
             TableHeader(text="", weight=1),                # Column for the Remove button.
         ]
 
         self.action_table.setHeaders(headers=headers)
-        
+
         # [2.2.]
         # Then fill up the actions.
-        # Render the list of the actions to the table.
-        for i in range(len(self.history_actions)):
-            # Closure problem with python.
-            # If I ever need to lock this i value, like how Go used to do "i:=i"
-            # This is how python locks value.
-            # 
-            # def run_action(i = i):
-            #     try: 
-            #         self.executeAction(self.history_actions[i])
-            #     except Exception as e:
-            #         print("Exception: {}".format(e))
-            # 
-            # If I do this instead:
-            # 
-            # def run_action():
-            #     index = i
-            #     self.executeAction(self.history_actions[i])
-            # 
-            # Then. the "index" will take "i"'s reference instead of the "i" current value,
-            # and the click_me function would refer to the last item.
-            # Go is fine with this value locking, but not Python.
-            # (Go lock by make a new reference pointing taking the same value, by reinitiating the variable using ":=")
-            # 
-            # By calling addHistoryActionRow with all the parameter name defined,
-            # I accidentally lock the i value without knowing :3
-            # In the example, is the action that is locked.
-            # action_table.addHistoryActionRow(..., action=self.history_actions[i], ...)
-            self.action_table.addHistoryActionRow(
-                action=self.history_actions[i],
-                result_label=result_label,
-                onDelete=self.remove_history_action,
-            )
+        self.action_table.loadData(self.save_file_name)
 
         # TODO [3]: - Add save(export)/import option for the History tab.
         self.tab_control.add(child=history_tab, text="History")
 
 
     def __renderTemplateTab(self) -> None:
-        template_tab = ttk.Frame(master=self.tab_control)
-        self.frames[TEMPLATE_TAB_KEY] = template_tab
-
-        # TODO: Rename this top_frame. Does the same thing for the __renderHistoryTab.
-        top_frame = tk.Frame(master=template_tab)
-        top_frame.pack(side=tk.TOP, fill=tk.X)
-        
-        save_button = tk.Button(master=top_frame, text="Save", width="6")
-        save_button.pack(side=tk.LEFT)
-
-        save_all_button = tk.Button(master=top_frame, text="Save all", width="6")
-        save_all_button.pack(side=tk.LEFT)
-
-        template_tab_control = ttk.Notebook(master=template_tab, padding=(0, 4, 0, 0))
-        template_tab_control.pack(expand=1, fill="both")
-
-        def onRenameTab() -> None:
-            response = simpledialog.askstring(title="New tab name", prompt="Please enter the tab name")
-            if response is not None:
-                template_tab_control.tab(template_tab_control.select(), text=response)
-
-        # TODO: Add a hotkey for this?
-        rename_button = tk.Button(master=top_frame, text="Rename", width="6", command=onRenameTab)
-        rename_button.pack(side=tk.LEFT)
-
-        import_button = tk.Button(master=top_frame, text="Import", width="6")
-        import_button.pack(side=tk.RIGHT)
-
-        export_button = tk.Button(master=top_frame, text="Export", width="6")
-        export_button.pack(side=tk.RIGHT)
-
-        # TODO: Rename this main_frame, it's certainly not the "main" one that I care about.
-        main_frame = tk.Frame(master=template_tab)
-        main_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        
-        template1 = ttk.Frame(master=template_tab_control)
-        template_tab_control.add(child=template1, text="New template")
-        tk.Label(master=template1, text="Test template 1").pack(padx=10, pady=10)
-        
-        # template2 = ttk.Frame(master=template_tab_control)
-        # template_tab_control.add(child=template2, text="Example template 2")
-        # tk.Label(master=template2, text="Test template 2").pack(padx=10, pady=10)
-
-        # onAddTabClick checked if the users click on the <<New tab icon>> (aka the last tab).
-        # If they do, add a new tab right before the <<New tab icon>>,
-        # and select that newly added tab.
-        # https://stackoverflow.com/questions/71859022/tkinter-notebook-create-new-tabs-by-clicking-on-a-plus-tab-like-every-web-brow
-        # 
-        # TODO: Add a hotkey for this?
-        def onAddTabClick(_: tk.Event):
-            selected_tab: ttk.Frame = template_tab_control.select()
-            new_tab_icon: ttk.Frame = template_tab_control.tabs()[-1]
-            
-            if selected_tab == new_tab_icon:
-                index = len(template_tab_control.tabs()) - 1
-                new_template = ttk.Frame(master=template_tab_control)
-                template_tab_control.insert(index, child=new_template, text="New template")
-                template_tab_control.select(index)
-
-        template_tab_control.bind("<<NotebookTabChanged>>", onAddTabClick)
-        add_button = tk.Frame()
-        template_tab_control.add(child=add_button, text="+")
-        
-        self.tab_control.add(child=template_tab, text="Templates")
+        self.tab_templates: TabTemplates = TabTemplates(master=self.tab_control, driver=self.driver)
+        self.tab_control.add(child=self.tab_templates.main_ui, text="Templates")
 
     
     def __disableAllEntriesActionsTab(self) -> None:
@@ -463,6 +359,7 @@ class UI:
     
     # __submitButtonPressed contains the logic when we submit the data for the "Actions" tab.
     # Performing simple action on the selenium driver (bot windows)
+    # This action takes a long time to execute so remember to put it in the thread!!!
     def __submitButtonPressed(self) -> None:
         result_label = self.result_labels[SINGLE_ACTION_RESULT_KEY]
         
@@ -474,10 +371,8 @@ class UI:
             result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
             return
 
-        action_index : int = 0
         if action.needToStore():
-            action_index = len(self.history_actions)
-            self.history_actions.append(action)
+            self.action_table.addHistoryActionRow(action=action)
 
         # Update the result bar to yellow hinting that it's running. 
         result_label.configure(background="#f3e96c", text=ResultText.IN_PROGRESS)
@@ -486,27 +381,16 @@ class UI:
         submit_button = self.buttons[EXECUTE_BUTTON_KEY]
         submit_button.config(state="disabled")
 
-        def __processAction(action=action):
-            try:
-                action.executeAction(driver=self.driver)
-            except Exception as e:
-                # Update the result label with error if there's an error
-                result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
-            else:
-                # Else, mark it as done.
-                result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
-            finally:
-                submit_button.config(state="normal")
-                if action.needToStore():
-                    self.action_table.addHistoryActionRow(
-                        action=action,
-                        result_label=self.result_labels[HISTORY_ACTION_RESULT_KEY],
-                        onDelete=self.remove_history_action,
-                    )
-        
-        # Put the long process of the browser trying to do stuff in the thread. 
-        execution_thread = threading.Thread(target=__processAction)
-        execution_thread.start()
+        try:
+            action.executeAction(driver=self.driver)
+        except Exception as e:
+            # Update the result label with error if there's an error
+            result_label.configure(background="#f13c1c", text=ResultText.FAILED.format(e))
+        else:
+            # Else, mark it as done.
+            result_label.configure(background="#3af40d", text=ResultText.SUCCESS)
+        finally:
+            submit_button.config(state="normal")
         
 
     # Start the application.
@@ -519,26 +403,5 @@ class UI:
     
     # save exports the history to json.
     def save(self) -> None:
-        from pathlib import Path
+        self.action_table.save(self.save_file_name)
 
-        print("Saving...")
-        
-        # Make the history folder if not exists.
-        history_folder = "./history"
-        Path(history_folder).mkdir(parents=True, exist_ok=True)
-        filename = "dump"
-
-        # The actual saving.
-        if self.save_file_name == "":
-            if not re.match("[A-Za-z0-9-_]+", filename):
-                raise Exception("filename can only contains: alphabetical characters, numbers, -, _. Your filename: {}".format(filename))
-            self.save_file_name = history_folder + "/" + filename + ".json"
-        
-        with open(self.save_file_name, "w") as f:
-            json.dump(self.history_actions, default=lambda o: o.encode(), indent=4, fp=f)
-
-        print("Done...")
-
-
-    def remove_history_action(self, action:Action) -> None:
-        self.history_actions.remove(action)
