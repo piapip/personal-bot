@@ -116,9 +116,22 @@ class HistoryActionRow:
         if not action.needTabIndex(): # Then check if I need to disable the entry
             self.tab_index_entry.config(state="readonly")
 
-        # Remove button cell.
+        # Reposition buttons
+        reposition_buttons_frame: tk.Frame = tk.Frame(master=self.row_frame, padx=1)
+        reposition_buttons_frame.grid(row=0, column=5, sticky=tk.E + tk.W)
+        # # Split the Reposition buttons frame into 2 parts equally.
+        reposition_buttons_frame.grid_columnconfigure(index=0, weight=1, uniform="tag")
+        reposition_buttons_frame.grid_columnconfigure(index=1, weight=1, uniform="tag")
+        self.move_up_button: tk.Button = tk.Button(master=reposition_buttons_frame)
+        # # Then put each buttons to the each part.
+        self.move_up_button: tk.Button = tk.Button(master=reposition_buttons_frame, text="↑")
+        self.move_up_button.grid(row=0, column=0, sticky=tk.E+tk.W)
+        self.move_down_button: tk.Button = tk.Button(master=reposition_buttons_frame, text="↓")
+        self.move_down_button.grid(row=0, column=1, sticky=tk.E+tk.W)
+
+        # Remove button cell. (always the last column)
         self.remove_button: tk.Button = tk.Button(master=self.row_frame, text="Remove", anchor=tk.W, command=self.__delete)
-        self.remove_button.grid(row=0, column=5, sticky=tk.E + tk.W)
+        self.remove_button.grid(row=0, column=len(headers)-1, sticky=tk.E + tk.W)
 
 
     # updateAction updates its own content based on the content provided via the GUI.
@@ -236,20 +249,8 @@ class HistoryActionRow:
     def __delete(self) -> None:
         """__delete deletes the row in the History and remove it from the saved data.
         """
-        # TODO [13]: Put all of this under a frame or smt.
-        # Like a widget, so if I want to delete the entire row,
-        # I just need to call 1 "row.destroy()" instead of component one by one.
-        # Though I don't hate this one by one, easy for customization.
-    
         # Destroy all the widgets in the row.
-        # TODO [13]: Put all of this under a frame or smt.
-        self.replay_button.destroy()
-        self.option_menu.destroy()
-        # self.name_entry.destroy()
-        self.css_selector_entry.destroy()
-        self.value_entry.destroy()
-        self.tab_index_entry.destroy()
-        self.remove_button.destroy()
+        self.row_frame.destroy()
 
         # Perform any necessary callback like removing data from the history list.
         self.onDeleteCallback(self)
@@ -269,7 +270,6 @@ class ScrollableActionTable:
         self.master = master
         self.driver = driver
         self.result_label: tk.Label = result_label
-        self.headers: list[TableHeader] = []
         self.rows: list[HistoryActionRow] = []
 
         # Initiating the canvas for the scrollable table.
@@ -292,17 +292,14 @@ class ScrollableActionTable:
         self.history_table_frame.bind("<Configure>", self.__onFrameConfigure)
         self.main_canvas.bind("<Configure>", self.__updateCanvansFrameWidth)
 
-        if enable_add_row_button:
-            self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newEmptyRow)
-            self.add_row_button.grid(row=9995, column=5, sticky=tk.E + tk.W)
-
         self.headers: list[TableHeader] = [
             TableHeader(text="", weight=3),                # Column for the play button.
-            TableHeader(text="Action", weight=12),          # Column for the action.
-            # TableHeader(text="Name", weight=15),          #
-            TableHeader(text="CSS Selector", weight=15),    #
-            TableHeader(text="Value", weight=15),           #
-            TableHeader(text="Tab Index", weight=15),       #
+            TableHeader(text="Action", weight=12),         # Column for the action.
+            # TableHeader(text="Name", weight=15),         #
+            TableHeader(text="CSS Selector", weight=15),   #
+            TableHeader(text="Value", weight=15),          #
+            TableHeader(text="Tab Index", weight=6),       #
+            TableHeader(text="", weight=6),                # Column for the reposition buttons
             TableHeader(text="", weight=5),                # Column for the Remove button.
         ]
 
@@ -310,6 +307,10 @@ class ScrollableActionTable:
             header = self.headers[i]
             self.history_table_frame.grid_columnconfigure(index=i, weight=header.weight, uniform="tag")
             tk.Label(master=self.history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
+        
+        if enable_add_row_button:
+            self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newEmptyRow)
+            self.add_row_button.grid(row=9995, column=len(self.headers)-1, sticky=tk.E + tk.W)
 
 
     # addHistoryActionRow adds an action row to the list.

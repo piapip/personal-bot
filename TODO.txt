@@ -12,8 +12,6 @@
 
 [12] Hotkey for the add new tab (ctrl T)?
 
-[13] Put all the cell under the same widget or let the caller render the cell by itself. 
-
 [15] Maybe I can put the UI component into the Action object.
      Like instead of storing name, value, css,
      it will store the entries that provide those information...
@@ -22,5 +20,4 @@
        renderActionForHistoryTab...
      How's that?
 
-[21] This [13] request is blocking drag and reposition feature.
-     Check this video to do the drag and reposition: https://www.youtube.com/watch?v=uGmMsGOcBB0
+[21] Check this video to do the drag and reposition: https://www.youtube.com/watch?v=uGmMsGOcBB0
