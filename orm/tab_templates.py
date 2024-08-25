@@ -9,6 +9,7 @@ import re
 from configs.ui_configs import (
     ResultText,
 )
+from helpers.ui import StyledEntry
 from orm.driver import Driver
 from orm.scrollable_table import (
     TableHeader,
@@ -30,7 +31,7 @@ class Template:
         self.main_ui: tk.Frame = tk.Frame(master=master)
         # The default content of the template tab.
         # The layout would be:
-        #   1. Header: The result label.
+        #   1. Header: The result label and progress bar.
         #      The template can be looped over and over for a very long time,
         #      so I need to keep myself up to date about the processing of each template,
         #      therefore, it would be to the top, and each template will have its own result_label.
@@ -52,6 +53,22 @@ class Template:
         # [1]
         self.result_label: tk.Label = tk.Label(master=self.top_frame, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
         self.result_label.pack(padx=10, pady=10, fill="x")
+
+        # Frame for the the "Repeat count" entry and the Progress bar.
+        progress_bar_frame: tk.Frame = tk.Frame(master=self.top_frame)
+        progress_bar_frame.pack(fill="x", padx=10, pady=10)
+        progress_bar_frame.columnconfigure(index=0, weight=1, uniform="tag")
+        progress_bar_frame.columnconfigure(index=1, weight=1, uniform="tag")
+        progress_bar_frame.columnconfigure(index=2, weight=10, uniform="tag")
+
+        tk.Label(master=progress_bar_frame, text="Repeat: ", width=12, anchor=tk.E, ).grid(row=0, column=0, sticky=tk.W + tk.E)
+        self.repeat_count_entry: ttk.Entry = StyledEntry(master=progress_bar_frame)
+        self.repeat_count_entry.grid(row=0, column=1, sticky=tk.W, padx=5)
+        self.repeat_count_entry.insert(index=0, string="1")
+
+        self.progress_percent = tk.IntVar()
+        self.progress_bar: ttk.Progressbar = ttk.Progressbar(master=progress_bar_frame, orient=tk.HORIZONTAL, variable=self.progress_percent)
+        self.progress_bar.grid(row=0, column=2, sticky=tk.W + tk.E)
 
         # [2]
         # Now actually filling in the table of the middle_frame.
@@ -79,26 +96,40 @@ class Template:
     def retriggerAllRows(self) -> None:
         # Mark that this template is running.
         self.continue_next_step = True
+        self.repeat_count_entry.config(state="readonly")
+        self.action_table.add_row_button.config(state="disabled")
 
-        for row in self.action_table.rows:
-            try:
-                row.retriggerHistoryAction()
-            except Exception:
+        repeat = int(self.repeat_count_entry.get())
+
+        total_task_count = repeat * len(self.action_table.rows)
+        task_done_count = 0
+        for _ in range(repeat):
+            if not self.continue_next_step:
+                self.result_label.configure(text="Paused")
                 break
-            finally:
-                # This can be turned off by calling urgentPause.
-                if not self.continue_next_step:
+
+            for row in self.action_table.rows:
+                try:
+                    row.retriggerHistoryAction()
+                except Exception:
                     break
-                else:
-                    sleep(0.5)
+                finally:
+                    task_done_count += 1
+                    self.progress_percent.set(int(100*task_done_count/total_task_count))
+                    # This can be turned off by calling urgentPause.
+                    if not self.continue_next_step:
+                        break
+                    else:
+                        sleep(0.5)
 
         # Mark that this template is done running.
         self.continue_next_step = False
+        self.repeat_count_entry.config(state="normal")
+        self.action_table.add_row_button.config(state="normal")
 
 
     # run executes all the actions of the template one by one.
     def run(self) -> None:
-        # Maybe add some progress bar above.
         execution_thread = threading.Thread(target=self.retriggerAllRows)
         execution_thread.start()
 

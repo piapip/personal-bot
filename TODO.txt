@@ -7,7 +7,7 @@
 [9] Add template that is loopable.
     [OK] Add the table to the template.
     Add the timer.
-    Add the progressbar.
+    [OK] Add the progressbar.
     [OK] Store the template.
     [OK] Add the "Add step" button.
     [OK] Run everything.
