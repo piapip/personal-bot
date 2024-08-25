@@ -201,6 +201,11 @@ class Driver:
 
 
     @__check_dry_run
+    def executeScript(self, script: str):
+        self.driver.execute_script(script=script)
+
+
+    @__check_dry_run
     def close(self):
         # self.driver.close() # this only close 1 tab.
         self.driver.quit()
