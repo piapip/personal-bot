@@ -134,6 +134,14 @@ class HistoryActionRow:
         self.remove_button.grid(row=0, column=len(headers)-1, sticky=tk.E + tk.W)
 
 
+    def updateOnMoveUp(self, onMoveUp: Callable[[], None]) -> None:
+        self.move_up_button.config(command=onMoveUp)
+
+
+    def updateOnMoveDown(self, onMoveDown: Callable[[], None]) -> None:
+        self.move_down_button.config(command=onMoveDown)    
+
+
     # updateAction updates its own content based on the content provided via the GUI.
     # updateAction will remove the action's failed reason if there's any change to the action.
     def updateAction(self) -> None:
@@ -324,6 +332,16 @@ class ScrollableActionTable:
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+
+        def onMoveUp() -> None:
+            self.moveRowUpBy(target_row=action_row, delta=1)
+        
+        def onMoveDown() -> None:
+            self.moveRowDownBy(target_row=action_row, delta=1)
+
+        # Spaghetti :')
+        action_row.updateOnMoveUp(onMoveUp=onMoveUp)
+        action_row.updateOnMoveDown(onMoveDown=onMoveDown)
         action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
@@ -435,4 +453,65 @@ class ScrollableActionTable:
     # __removeRow removes the row after destroying all the widgets related to that row on the UI.
     # This will be passed around as the callback function. 
     def __removeRow(self, row: HistoryActionRow) -> None:
-        self.rows.remove(row)        
+        self.rows.remove(row)
+
+
+    # moveRowUpBy moves the row up by delta row on the table
+    # and then moves down all the passing through row by 1. 
+    # delta is expected to be greater than 0.
+    def moveRowUpBy(self, target_row: HistoryActionRow, delta: int) -> None:
+        if delta == 0:
+            return
+
+        current_index = self.rows.index(target_row)
+        if current_index - delta < 0:
+            return
+        
+        affected_rows = self.rows[current_index-delta:current_index]
+
+        # Move up the targeted row by delta.
+        target_row.row_frame.grid(
+            columnspan=len(self.headers),
+            row=current_index-delta+1, # +1 because the first line is the header.
+            sticky=tk.E+tk.W)
+
+        # Move down the passed through row by 1.
+        for i in range(len(affected_rows)):
+            row = affected_rows[i]
+            row.row_frame.grid(
+                columnspan=len(self.headers),
+                row=current_index-delta+i+1+1, # an extra +1 because the first line is the header.
+                sticky=tk.E+tk.W)
+
+        self.rows.remove(target_row)
+        self.rows.insert(current_index-delta, target_row)
+
+
+    # moveRowDownBy moves the row down by delta row on the table
+    # and then moves up all the passing through row by 1. 
+    # delta is expected to be greater than 0.
+    def moveRowDownBy(self, target_row: HistoryActionRow, delta: int) -> None:
+        if delta == 0:
+            return
+
+        current_index = self.rows.index(target_row)
+        if current_index + delta >= len(self.rows):
+            return
+        
+        affected_rows = self.rows[current_index+1:current_index+delta+1]
+        
+        # Move down the targeted row by delta.
+        target_row.row_frame.grid(
+            columnspan=len(self.headers),
+            row=current_index+delta+1, # There's +1 because the first row is the header.
+            sticky=tk.E+tk.W)
+        # Move up the passed through row by 1.
+        for i in range(len(affected_rows)):
+            row = affected_rows[i]
+            row.row_frame.grid(
+                columnspan=len(self.headers),
+                row=current_index+i+1, # There's +1 because the first row is the header.
+                sticky=tk.E+tk.W)
+
+        self.rows.remove(target_row)
+        self.rows.insert(current_index+delta, target_row)
