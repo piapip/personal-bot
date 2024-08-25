@@ -9,6 +9,7 @@ class ActionType(StrEnum):
     CLICK_BY_SELECTOR = "Click by selector"
     CLICK_BY_VALUE = "Click by value"
     SWITCH_TAB = "Switch tab"
+    SLEEP = "Sleep"
 
 class Action:
     def __init__(
@@ -73,9 +74,10 @@ class Action:
         """
         needValue tells us if the current action needs Value or not.
         
-        Currently, only the ClickByValue action needs this data.
+        Currently, the ClickByValue action and the Sleep action needs this data.
         """
-        return self.action_type == ActionType.CLICK_BY_VALUE
+        return (self.action_type == ActionType.CLICK_BY_VALUE or
+                self.action_type == ActionType.SLEEP)
     
 
     def needTabIndex(self) -> bool:
@@ -137,9 +139,10 @@ class Action:
                         raise Exception("css_selector and value are expected for the Click by Value action")
                     else:
                         driver.clickByValue(selector=css_selector, value=value)
-                    
                 case ActionType.SWITCH_TAB:
                     driver.switchTab(tab_index=self.tab_index)
+                case ActionType.SLEEP:
+                    sleep(duration=float(self.value))
         except Exception as e:
             self.failed_reason = "{}".format(e)
             raise e
