@@ -6,6 +6,9 @@ from typing import List
 import os
 import re
 
+from configs.ui_configs import (
+    ResultText,
+)
 from orm.driver import Driver
 from orm.scrollable_table import (
     TableHeader,
@@ -19,6 +22,10 @@ class Template:
         self.master: ttk.Notebook = master
         self.name: str = name
         self.driver: Driver = driver
+        # continue_next_step hints us if the template is running or not.
+        # True means that the Template is running.
+        # False means that the Template is either terminated or not running.
+        self.continue_next_step: bool = False
         
         self.main_ui: tk.Frame = tk.Frame(master=master)
         # The default content of the template tab.
@@ -57,20 +64,51 @@ class Template:
         headers: list[TableHeader] = [
             TableHeader(text="", weight=1),                # Column for the play button.
             TableHeader(text="Action", weight=1),          # Column for the action.
-            TableHeader(text="Name", weight=4),            #
+            # TableHeader(text="Name", weight=4),          #
             TableHeader(text="CSS Selector", weight=4),    #
             TableHeader(text="Value", weight=4),           #
+            TableHeader(text="Tab Index", weight=4),       #
             TableHeader(text="", weight=1),                # Column for the Remove button.
         ]
 
         self.action_table.setHeaders(headers=headers)
-    
-    
+
+
+    # retriggerAllRows rerun ALL the actions in the table in the sequential manner.
+    # retriggerAllRows takes a lot of time to execute so it needs to be put into a thread!
+    def retriggerAllRows(self) -> None:
+        # Mark that this template is running.
+        self.continue_next_step = True
+
+        for row in self.action_table.rows:
+            try:
+                row.retriggerHistoryAction()
+            except Exception:
+                break
+            finally:
+                # This can be turned off by calling urgentPause.
+                if not self.continue_next_step:
+                    break
+                else:
+                    sleep(0.5)
+
+        # Mark that this template is done running.
+        self.continue_next_step = False
+
+
     # run executes all the actions of the template one by one.
     def run(self) -> None:
         # Maybe add some progress bar above.
-        execution_thread = threading.Thread(target=self.action_table.retriggerAll)
+        execution_thread = threading.Thread(target=self.retriggerAllRows)
         execution_thread.start()
+
+
+    # urgentPause stops the template's execution after its current step is finished.
+    def urgentPause(self) -> None:
+        # self.result_label.
+        if self.continue_next_step:
+            self.continue_next_step = False
+            self.result_label.configure(text=ResultText.PAUSE_NOTIFICATION)
 
 
 class TabTemplates:
@@ -98,16 +136,16 @@ class TabTemplates:
         self.middle_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         # [1] Set up buttons for the top_frame.
-        self.save_button = tk.Button(master=self.top_frame, text="Run", width="6", command=self.__runTemplate)
-        self.save_button.pack(side=tk.LEFT)
+        self.run_button = tk.Button(master=self.top_frame, text="Run", width="6", command=self.__runTemplate)
+        self.run_button.pack(side=tk.LEFT)
 
-        self.save_button = tk.Button(master=self.top_frame, text="Run All", width="6")
-        self.save_button.pack(side=tk.LEFT)
+        self.urgent_pause_button = tk.Button(master=self.top_frame, text="Pause", width="6", command=self.__urgentPauseTemplate)
+        self.urgent_pause_button.pack(side=tk.LEFT)
 
         self.save_button = tk.Button(master=self.top_frame, text="Save", width="6", command=self.__saveCurrentTemplate)
         self.save_button.pack(side=tk.LEFT)
 
-        self.save_all_button = tk.Button(master=self.top_frame, text="Save all", width="6")
+        self.save_all_button = tk.Button(master=self.top_frame, text="Save all", width="6", command=self.__saveAll)
         self.save_all_button.pack(side=tk.LEFT)
 
         # TODO [11]: Add a hotkey for this?
@@ -188,6 +226,13 @@ class TabTemplates:
         current_template.run()
 
 
+    # __urgentPauseTemplate stops the template from continuing after its current step execution.
+    def __urgentPauseTemplate(self) -> None:
+        current_tab_index: int = self.template_tabs_control.index(self.template_tabs_control.select())
+        current_template: Template = self.templates[current_tab_index]
+        current_template.urgentPause()
+
+
     # __saveCurrentTemplate exports the current selected template to json.
     def __saveCurrentTemplate(self) -> None:
         # TODO [19]: Duplicated template's name won't crash the saving process.
@@ -199,6 +244,14 @@ class TabTemplates:
         
         filename = self.history_folder + "/" + str(current_tab_index) + "_" + current_template.name + ".json"
         current_template.action_table.save(filename=filename)
+
+
+    # __saveAll traverse through all the templates, updates, and saves all of them. 
+    def __saveAll(self) -> None:
+        for i in range(len(self.templates)):
+            template = self.templates[i]
+            filename = self.history_folder + "/" + str(i) + "_" + template.name + ".json"
+            template.action_table.save(filename=filename)
 
 
     # load pulls all the templates from the previous attempts and put them to the screen.

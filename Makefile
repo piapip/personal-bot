@@ -11,3 +11,6 @@ deactivate-virtual-environment:
 
 install-dependency:
   py -m pip install -r ./requirements.txt
+
+run:
+  py .\__main__.py

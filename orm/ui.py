@@ -230,9 +230,10 @@ class UI:
         headers: list[TableHeader] = [
             TableHeader(text="", weight=1),                # Column for the play button.
             TableHeader(text="Action", weight=1),          # Column for the action.
-            TableHeader(text="Name", weight=4),            #
+            # TableHeader(text="Name", weight=4),          #
             TableHeader(text="CSS Selector", weight=4),    #
             TableHeader(text="Value", weight=4),           #
+            TableHeader(text="Tab Index", weight=4),       #
             TableHeader(text="", weight=1),                # Column for the Remove button.
         ]
 

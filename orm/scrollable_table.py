@@ -76,10 +76,10 @@ class HistoryActionRow:
 
         # Action cell.
         options=(
-            ActionType.CLICK_BY_NAME,
+            # ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
-            # ActionType.SWITCH_TAB,
+            ActionType.SWITCH_TAB,
         )
 
         self.selected_option = tk.StringVar()
@@ -87,26 +87,33 @@ class HistoryActionRow:
         self.option_menu = tk.OptionMenu(master, self.selected_option, *options, command=self.__onUpdateHistoryActionType)
         self.option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
 
-        # Name cell.
-        self.name_entry: ttk.Entry = StyledEntry(master=master)
-        self.name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
-        self.name_entry.insert(tk.END, action.name) # Fill data
-        if not action.needName(): # Then check if I need to disable the entry
-            self.name_entry.config(state="readonly")
+        # # Name cell.
+        # self.name_entry: ttk.Entry = StyledEntry(master=master)
+        # self.name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
+        # self.name_entry.insert(tk.END, action.name) # Fill data
+        # if not action.needName(): # Then check if I need to disable the entry
+        #     self.name_entry.config(state="readonly")
 
         # CSS Selector cell.
         self.css_selector_entry: ttk.Entry = StyledEntry(master=master)
-        self.css_selector_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
+        self.css_selector_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
         self.css_selector_entry.insert(tk.END, action.css) # Fill data
         if not action.needCSS(): # Then check if I need to disable the entry
             self.css_selector_entry.config(state="readonly")
 
         # Value cell.
         self.value_entry: ttk.Entry = StyledEntry(master=master)
-        self.value_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
+        self.value_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
         self.value_entry.insert(tk.END, action.value) # Fill data
         if not action.needValue(): # Then check if I need to disable the entry
             self.value_entry.config(state="readonly")
+
+        # TabIndex cell.
+        self.tab_index_entry: ttk.Entry = StyledEntry(master=master)
+        self.tab_index_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
+        self.tab_index_entry.insert(tk.END, action.tab_index) # Fill data
+        if not action.needTabIndex(): # Then check if I need to disable the entry
+            self.tab_index_entry.config(state="readonly")
 
         # Remove button cell.
         self.remove_button: tk.Button = tk.Button(master=master, text="Remove", anchor=tk.W, command=self.__delete)
@@ -118,23 +125,30 @@ class HistoryActionRow:
     def updateAction(self) -> None:
         has_new_change: bool = False
 
-        new_name = self.name_entry.get()
-        current_name = self.action.name
-        if new_name != current_name:
-            print("new name!")
-            self.action.name = new_name
-            has_new_change = True
+        # new_name = self.name_entry.get()
+        # current_name = self.action.name
+        # if new_name != current_name:
+        #     print("new name!")
+        #     self.action.name = new_name
+        #     has_new_change = True
         
         new_css_selector = self.css_selector_entry.get()
         if new_css_selector != self.action.css:
-            print("new css!")
+            print("new css: {}!".format(new_css_selector))
             self.action.css = new_css_selector
             has_new_change = True
 
         new_value = self.value_entry.get()
         if new_value != self.action.value:
-            print("new value!")
+            print("new value: {}!".format(new_value))
             self.action.value = new_value
+            has_new_change = True
+        
+        new_tab_index = self.tab_index_entry.get()
+        current_tab_index = self.action.tab_index
+        if new_tab_index != current_tab_index:
+            print("new tab index: {}!".format(new_tab_index))
+            self.action.tab_index = new_tab_index
             has_new_change = True
         
         if has_new_change:
@@ -197,19 +211,22 @@ class HistoryActionRow:
         self.action.action_type = action_type
 
         # Disable all the entries of the row.
-        self.name_entry.config(state="readonly")
+        # self.name_entry.config(state="readonly")
         self.css_selector_entry.config(state="readonly")
         self.value_entry.config(state="readonly")
+        self.tab_index_entry.config(state="readonly")
 
         # Then enable those that are required for the action type.
         match action_type:
-            case ActionType.CLICK_BY_NAME:
-                self.name_entry.configure(state="normal", background="white")
+            # case ActionType.CLICK_BY_NAME:
+            #     self.name_entry.configure(state="normal", background="white")
             case ActionType.CLICK_BY_SELECTOR:
                 self.css_selector_entry.configure(state="normal", background="white")
             case ActionType.CLICK_BY_VALUE:
                 self.css_selector_entry.configure(state="normal", background="white")
                 self.value_entry.configure(state="normal", background="white")
+            case ActionType.SWITCH_TAB:
+                self.tab_index_entry.configure(state="normal", background="white")
 
 
     def __delete(self) -> None:
@@ -224,9 +241,10 @@ class HistoryActionRow:
         # TODO [13]: Put all of this under a frame or smt.
         self.replay_button.destroy()
         self.option_menu.destroy()
-        self.name_entry.destroy()
+        # self.name_entry.destroy()
         self.css_selector_entry.destroy()
         self.value_entry.destroy()
+        self.tab_index_entry.destroy()
         self.remove_button.destroy()
 
         # Perform any necessary callback like removing data from the history list.
@@ -311,18 +329,6 @@ class ScrollableActionTable:
     # https://stackoverflow.com/questions/29319445/tkinter-how-to-get-frame-in-canvas-window-to-expand-to-the-size-of-the-canvas
     def __onFrameConfigure(self, event: tk.Event) -> None:
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
-
-
-    # retriggerAll rerun ALL the actions in the table in the sequential manner.
-    # retriggerAll takes a lot of time to execute so it needs to be put into a thread!
-    def retriggerAll(self) -> None:
-        for row in self.rows:
-            try:
-                row.retriggerHistoryAction()
-            except Exception:
-                break
-            finally:
-                sleep(0.5)
 
 
     # newEmptyRow add a new row to the template. 

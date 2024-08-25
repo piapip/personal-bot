@@ -93,9 +93,9 @@ class Action:
         True is we need to.
         False is we don't need to.
         """
-        return (self.action_type == ActionType.CLICK_BY_NAME or
-                self.action_type == ActionType.CLICK_BY_SELECTOR or
-                self.action_type == ActionType.CLICK_BY_VALUE)
+        return (self.action_type == ActionType.CLICK_BY_SELECTOR or
+                self.action_type == ActionType.CLICK_BY_VALUE or
+                self.action_type == ActionType.SWITCH_TAB)
 
 
     def hasError(self) -> bool:
@@ -112,7 +112,7 @@ class Action:
     def executeAction(self, driver: Driver) -> None:
         from helpers.action import sleep
         if driver.dry_run:
-            sleep(0.5)
+            sleep(2.5)
 
         try:
             match self.action_type:

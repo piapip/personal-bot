@@ -23,6 +23,7 @@ class ResultText(StrEnum):
     IN_PROGRESS = "Please wait. Executing..."
     SUCCESS = "Success"
     FAILED = "{}"
+    PAUSE_NOTIFICATION = "Pause after this action is done..."
 ################################################
 # HISTORY TABLE
 EXECUTE_BUTTON_KEY = "Execute button key"
