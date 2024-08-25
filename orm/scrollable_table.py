@@ -354,6 +354,12 @@ class ScrollableActionTable:
         )
 
         self.rows.append(action_row)
+        # Scroll to the bottom after adding new row.
+        # update_idletasks is crucial because
+        # canvas needs to recalculate its new height
+        # after adding the row to know the new bottom coordination.
+        self.main_canvas.update_idletasks() 
+        self.main_canvas.yview_moveto('1.0')
 
 
     # loadData reads data from the JSON file
