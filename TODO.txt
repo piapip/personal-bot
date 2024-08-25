@@ -5,6 +5,9 @@
 [9] Add the timer condition to the template's loop?
 
 [10] Click by value with HTML.
+     [OK] Driver logic.
+     Remove the separate column for tab_index.
+     Add the thing to the UI.
 
 [11] Hotkey for the rename?
 
