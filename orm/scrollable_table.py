@@ -144,7 +144,7 @@ class HistoryActionRow:
             self.action.value = new_value
             has_new_change = True
         
-        new_tab_index = self.tab_index_entry.get()
+        new_tab_index: int = int(self.tab_index_entry.get())
         current_tab_index = self.action.tab_index
         if new_tab_index != current_tab_index:
             print("new tab index: {}!".format(new_tab_index))

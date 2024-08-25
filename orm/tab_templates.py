@@ -141,6 +141,8 @@ class Template:
             self.continue_next_step = False
             self.result_label.configure(text=ResultText.PAUSE_NOTIFICATION)
 
+# https://reservation.reginaclinic.jp/?_gl=1*t0cawi*_gcl_aw*R0NMLjE3MjQ1NjUxODIuRUFJYUlRb2JDaE1JM1o2Njc3bVBpQU1Wd1Z3UEFoMlBnemhpRUFBWUFpQUFFZ0w1aVBEX0J3RQ..*_gcl_au*MTkxMDM0NTM0OS4xNzI0NTY1MTc4#/
+# https://reservation.mens.reginaclinic.jp/?utm_medium=cpc_brand&utm_source=google&utm_campaign=brand_term&argument=cYCQCTwd&dmai=a652fa167b8892#/
 
 class TabTemplates:
     def __init__(self, master: ttk.Notebook, driver: Driver) -> None:
