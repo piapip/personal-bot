@@ -378,6 +378,16 @@ class ScrollableActionTable:
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+        
+        def onMoveUp() -> None:
+            self.moveRowUpBy(target_row=action_row, delta=1)
+        
+        def onMoveDown() -> None:
+            self.moveRowDownBy(target_row=action_row, delta=1)
+
+        # Spaghetti :')
+        action_row.updateOnMoveUp(onMoveUp=onMoveUp)
+        action_row.updateOnMoveDown(onMoveDown=onMoveDown)
         action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
