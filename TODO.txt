@@ -4,13 +4,7 @@
 
 [8] Add a repositioning button.
 
-[9] Add template that is loopable.
-    [OK] Add the table to the template.
-    Add the timer.
-    [OK] Add the progressbar.
-    [OK] Store the template.
-    [OK] Add the "Add step" button.
-    [OK] Run everything.
+[9] Add the timer condition to the template's loop?
 
 [10] Click by value with HTML.
 
