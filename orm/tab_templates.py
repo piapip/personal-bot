@@ -48,7 +48,7 @@ class Template:
         self.top_frame.pack(side=tk.TOP, fill=tk.X)
 
         self.middle_frame: tk.Frame = tk.Frame(master=self.main_ui)
-        self.middle_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)        
+        self.middle_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         # [1]
         self.result_label: tk.Label = tk.Label(master=self.top_frame, background="#e5e0df", height=1, padx=10, pady=10, text="Waiting for command")
@@ -190,7 +190,7 @@ class TabTemplates:
         self.export_button.pack(side=tk.RIGHT)
 
         # [2] Setup the template zone for the middle_frame.
-        self.template_tabs_control: ttk.Notebook = ttk.Notebook(master=self.main_ui, padding=(0, 4, 0, 0))
+        self.template_tabs_control: ttk.Notebook = ttk.Notebook(master=self.middle_frame, padding=(0, 4, 0, 0))
         self.template_tabs_control.pack(expand=1, fill="both")
 
         # For the middle_frame that includes templates, initiate with

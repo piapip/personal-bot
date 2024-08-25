@@ -1,7 +1,7 @@
 from orm.driver import Driver
 from orm.ui import UI
 
-driver = Driver(dry_run=False, high_light_mode=False)
+driver = Driver(dry_run=True, high_light_mode=False)
 # print("The current url is:"+str(driver.driver.current_url))
 
 # driver.switchTab(0)
