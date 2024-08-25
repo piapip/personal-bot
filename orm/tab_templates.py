@@ -12,7 +12,6 @@ from configs.ui_configs import (
 from helpers.ui import StyledEntry
 from orm.driver import Driver
 from orm.scrollable_table import (
-    TableHeader,
     ScrollableActionTable,
 )
 
@@ -77,18 +76,6 @@ class Template:
             driver=self.driver,
             result_label=self.result_label,
             enable_add_row_button=True)
-
-        headers: list[TableHeader] = [
-            TableHeader(text="", weight=1),                # Column for the play button.
-            TableHeader(text="Action", weight=1),          # Column for the action.
-            # TableHeader(text="Name", weight=4),          #
-            TableHeader(text="CSS Selector", weight=4),    #
-            TableHeader(text="Value", weight=4),           #
-            TableHeader(text="Tab Index", weight=4),       #
-            TableHeader(text="", weight=1),                # Column for the Remove button.
-        ]
-
-        self.action_table.setHeaders(headers=headers)
 
 
     # retriggerAllRows rerun ALL the actions in the table in the sequential manner.

@@ -21,3 +21,6 @@
        renderActionForActionsTab...
        renderActionForHistoryTab...
      How's that?
+
+[21] This [13] request is blocking drag and reposition feature.
+     Check this video to do the drag and reposition: https://www.youtube.com/watch?v=uGmMsGOcBB0

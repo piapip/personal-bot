@@ -32,23 +32,19 @@ class HistoryActionRow:
             master: tk.Frame,
             driver: Driver,
             action: Action,
-            action_index: int,
+            headers: List[TableHeader],
             result_label: tk.Label,
             onDeleteCallback: Callable[[Action], None],
         ) -> None:
         """
         Calling ActionRow will do create an instance of ActionRow, also render it on the screen.
 
-        :action_index: int: the index of the ACTION (not the row) in the entire history.
-        :action_index: is only here as a relative value compared to other row to decide the showing order.
-        :action_index: should not be used for any serious logic.
         :result_label: tk.Label: the label where the action shows the automation result.
         :driver: orm.driver.Driver: the browser where the automation will be executed.
         :onDeleteCallback: is the function that will be executed when the row is deleted.
         """
         self.master: tk.Frame = master
         self.driver: Driver = driver
-        self.action_index: int = action_index
         self.action: Action = action
         self.result_label: tk.Label = result_label
         self.onDeleteCallback: Callable[[HistoryActionRow], None] = onDeleteCallback
@@ -56,6 +52,10 @@ class HistoryActionRow:
         # I intentionally keep the cell separately instead of grouping them under the same widget
         # so I have rooms for customization if needed to.
         # I have no concrete design after all.
+
+        self.row_frame: tk.Frame = tk.Frame(master=master)
+        for i in range(len(headers)):
+            self.row_frame.grid_columnconfigure(index=i, weight=headers[i].weight, uniform="tag")
 
         # Replay button
         def replay_in_thread() -> None:
@@ -71,8 +71,8 @@ class HistoryActionRow:
                 
             threading.Thread(target=replay).start()
 
-        self.replay_button: tk.Button = tk.Button(master=master, text="Run", anchor=tk.W, command=replay_in_thread)
-        self.replay_button.grid(row=action_index+1, column=0, sticky=tk.E + tk.W)
+        self.replay_button: tk.Button = tk.Button(master=self.row_frame, text="Run", anchor=tk.W, command=replay_in_thread)
+        self.replay_button.grid(row=0, column=0, sticky=tk.E + tk.W)
 
         # Action cell.
         options=(
@@ -85,40 +85,40 @@ class HistoryActionRow:
 
         self.selected_option = tk.StringVar()
         self.selected_option.set(action.action_type)
-        self.option_menu = tk.OptionMenu(master, self.selected_option, *options, command=self.__onUpdateHistoryActionType)
-        self.option_menu.grid(row=action_index+1, column=1, sticky=tk.E + tk.W)
+        self.option_menu = tk.OptionMenu(self.row_frame, self.selected_option, *options, command=self.__onUpdateHistoryActionType)
+        self.option_menu.grid(row=0, column=1, sticky=tk.E + tk.W)
 
         # # Name cell.
-        # self.name_entry: ttk.Entry = StyledEntry(master=master)
-        # self.name_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
+        # self.name_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        # self.name_entry.grid(row=0, column=2, sticky=tk.E + tk.W)
         # self.name_entry.insert(tk.END, action.name) # Fill data
         # if not action.needName(): # Then check if I need to disable the entry
         #     self.name_entry.config(state="readonly")
 
         # CSS Selector cell.
-        self.css_selector_entry: ttk.Entry = StyledEntry(master=master)
-        self.css_selector_entry.grid(row=action_index+1, column=2, sticky=tk.E + tk.W)
+        self.css_selector_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.css_selector_entry.grid(row=0, column=2, sticky=tk.E + tk.W)
         self.css_selector_entry.insert(tk.END, action.css) # Fill data
         if not action.needCSS(): # Then check if I need to disable the entry
             self.css_selector_entry.config(state="readonly")
 
         # Value cell.
-        self.value_entry: ttk.Entry = StyledEntry(master=master)
-        self.value_entry.grid(row=action_index+1, column=3, sticky=tk.E + tk.W)
+        self.value_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.value_entry.grid(row=0, column=3, sticky=tk.E + tk.W)
         self.value_entry.insert(tk.END, action.value) # Fill data
         if not action.needValue(): # Then check if I need to disable the entry
             self.value_entry.config(state="readonly")
 
         # TabIndex cell.
-        self.tab_index_entry: ttk.Entry = StyledEntry(master=master)
-        self.tab_index_entry.grid(row=action_index+1, column=4, sticky=tk.E + tk.W)
+        self.tab_index_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.tab_index_entry.grid(row=0, column=4, sticky=tk.E + tk.W)
         self.tab_index_entry.insert(tk.END, action.tab_index) # Fill data
         if not action.needTabIndex(): # Then check if I need to disable the entry
             self.tab_index_entry.config(state="readonly")
 
         # Remove button cell.
-        self.remove_button: tk.Button = tk.Button(master=master, text="Remove", anchor=tk.W, command=self.__delete)
-        self.remove_button.grid(row=action_index+1, column=5, sticky=tk.E + tk.W)
+        self.remove_button: tk.Button = tk.Button(master=self.row_frame, text="Remove", anchor=tk.W, command=self.__delete)
+        self.remove_button.grid(row=0, column=5, sticky=tk.E + tk.W)
 
 
     # updateAction updates its own content based on the content provided via the GUI.
@@ -296,14 +296,19 @@ class ScrollableActionTable:
             self.add_row_button: tk.Button = tk.Button(master=self.history_table_frame, text="Add", anchor=tk.W, command=self.newEmptyRow)
             self.add_row_button.grid(row=9995, column=5, sticky=tk.E + tk.W)
 
+        self.headers: list[TableHeader] = [
+            TableHeader(text="", weight=3),                # Column for the play button.
+            TableHeader(text="Action", weight=12),          # Column for the action.
+            # TableHeader(text="Name", weight=15),          #
+            TableHeader(text="CSS Selector", weight=15),    #
+            TableHeader(text="Value", weight=15),           #
+            TableHeader(text="Tab Index", weight=15),       #
+            TableHeader(text="", weight=5),                # Column for the Remove button.
+        ]
 
-    # setHeaders renders the table header.
-    def setHeaders(self, headers: List[TableHeader]) -> None:
-        self.headers = headers
-
-        for i in range(len(headers)):
-            header = headers[i]
-            self.history_table_frame.grid_columnconfigure(index=i, weight=header.weight)
+        for i in range(len(self.headers)):
+            header = self.headers[i]
+            self.history_table_frame.grid_columnconfigure(index=i, weight=header.weight, uniform="tag")
             tk.Label(master=self.history_table_frame, text=header.text, anchor=tk.W).grid(row=0, column=i, sticky=tk.N + tk.E + tk.W + tk.S)
 
 
@@ -312,12 +317,13 @@ class ScrollableActionTable:
     def addHistoryActionRow(self, action: Action) -> None:
         action_row = HistoryActionRow(
             master=self.history_table_frame,
-            action=action,
-            action_index=len(self.rows),
             driver=self.driver,
+            action=action,
+            headers=self.headers,
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+        action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
 
@@ -347,11 +353,13 @@ class ScrollableActionTable:
                 tab_index=0,
                 value="",
             ),
-            action_index=len(self.rows),
+            # action_index=len(self.rows),
+            headers=self.headers,
             driver=self.driver,
             result_label=self.result_label,
             onDeleteCallback=self.__removeRow,
         )
+        action_row.row_frame.grid(row=len(self.rows)+1, columnspan=len(self.headers), sticky=tk.E+tk.W)
 
         self.rows.append(action_row)
         # Scroll to the bottom after adding new row.
