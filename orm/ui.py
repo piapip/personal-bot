@@ -116,6 +116,7 @@ class UI:
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
             ActionType.SWITCH_TAB,
+            ActionType.SLEEP,
         )
         
         selected_option = tk.StringVar()
@@ -310,6 +311,8 @@ class UI:
                     self.__enableInputOptionsActionsTab(TAB_INDEX_KEY, "No tab")
                 else:
                     self.__enableInputOptionsActionsTab(TAB_INDEX_KEY, "[0-{}]".format(tab_count - 1))
+            case ActionType.SLEEP:
+                self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input sleep duration please")
 
     
     # __gatherSubmittedData aggregates all the data given via the "Actions" tab into 1 Action.
@@ -355,7 +358,15 @@ class UI:
                         value=self.entries[VALUE_ENTRY_KEY].get(),
                     )
                 else:
-                    raise Exception("Tab index must be a positive number for the Switching Tab action!")
+                    raise Exception("Tab index must be a positive number for the Switching Tab action!")           
+            case ActionType.SLEEP:
+                return Action(
+                    action_type=action_type,
+                    name="",
+                    css="",
+                    tab_index=0,
+                    value=self.entries[VALUE_ENTRY_KEY].get(),
+                )
     
     # __submitButtonPressed contains the logic when we submit the data for the "Actions" tab.
     # Performing simple action on the selenium driver (bot windows)

@@ -80,6 +80,7 @@ class HistoryActionRow:
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
             ActionType.SWITCH_TAB,
+            ActionType.SLEEP,
         )
 
         self.selected_option = tk.StringVar()
@@ -227,6 +228,9 @@ class HistoryActionRow:
                 self.value_entry.configure(state="normal", background="white")
             case ActionType.SWITCH_TAB:
                 self.tab_index_entry.configure(state="normal", background="white")
+            case ActionType.SLEEP:
+                self.value_entry.configure(state="normal", background="white")
+                
 
 
     def __delete(self) -> None:
