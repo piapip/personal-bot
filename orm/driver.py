@@ -14,9 +14,6 @@ from configs.automation_configs import (
     HIGHLIGHT_ELEMENT_COLOR,
     HIGHLIGHT_ELEMENT_DURATION,
 )
-from helpers.action import (
-    sleep,
-)
 from selenium import webdriver 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -24,6 +21,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
 from typing import List
+import time
 
 class Driver:
     def __init__(self, dry_run: bool, high_light_mode: bool) -> None:
@@ -56,7 +54,7 @@ class Driver:
     def goto(self, link: str):
         # goto redirect the browser to the given link.
         self.driver.get(link)
-        sleep(SLEEP_TIME_AFTER_LOAD)
+        time.sleep(SLEEP_TIME_AFTER_LOAD)
         
 
     @__check_dry_run
@@ -64,26 +62,26 @@ class Driver:
         # Go into the page.
         self.goto(LOBBY_URL)
         elemLogin = self.getElementByValue(selector=LOGIN_SECTION_SELECTOR, value="Log in")
-        sleep(0.1)
+        time.sleep(0.1)
         elemLogin.click()
-        sleep(0.1)
+        time.sleep(0.1)
         
         # Type in email and password
         elemEmail = self.getElementByName(name="email")
         elemPassword = self.getElementByName(name="password")
         
-        sleep(0.1)
+        time.sleep(0.1)
         elemEmail.send_keys(USERNAME)
-        sleep(0.1)
+        time.sleep(0.1)
         elemPassword.send_keys(PASSWORD)
-        sleep(0.2)
+        time.sleep(0.2)
 
         self.getElementByCSS(LOGIN_BUTTON_SELECTOR).click()
 
         # After logging in, direct to the list of the server.
         # And click on the thing.
         self.getElementByCSS(PLAY_BUTTON).click()
-        sleep(SLEEP_TIME_AFTER_LOAD)
+        time.sleep(SLEEP_TIME_AFTER_LOAD)
 
 
     @__check_dry_run
@@ -94,7 +92,7 @@ class Driver:
             self.highLightElements(elements=[elem])
         except TimeoutException:
             self.driver.refresh()
-            sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL)
             try:
                 elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
             except TimeoutException as timeoutEx:
@@ -124,7 +122,7 @@ class Driver:
             self.highLightElements(elements=[elem])
         except TimeoutException:
             self.driver.refresh()
-            sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL)
             try:
                 elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: {}".format(selector))
             except TimeoutException as timeoutEx:
@@ -154,7 +152,7 @@ class Driver:
             self.highLightElements(elements=elements)
         except TimeoutException:
             self.driver.refresh()
-            sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL)
             try:
                 elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             except TimeoutException as timeoutEx:
@@ -208,7 +206,7 @@ class Driver:
             self.highLightElements(elements=elements)
         except TimeoutException:
             self.driver.refresh()
-            sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL)
             try:
                 elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             except TimeoutException as timeoutEx:
@@ -272,5 +270,5 @@ class Driver:
             original_style = element.get_attribute('style')
             moveToView(element=element)
             applyStyle(element=element, style="border: {}px solid {};".format(HIGHLIGHT_ELEMENT_BORDER, HIGHLIGHT_ELEMENT_COLOR))
-            sleep(HIGHLIGHT_ELEMENT_DURATION)
+            time.sleep(HIGHLIGHT_ELEMENT_DURATION)
             applyStyle(element=element, style=original_style)
