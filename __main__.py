@@ -3,7 +3,7 @@ from orm.ui import UI
 
 # from helpers.action import sleep
 
-driver = Driver(dry_run=True, high_light_mode=True)
+driver = Driver(dry_run=False, high_light_mode=False)
 
 # driver.switchTab(0)
 # driver.goto("https://stackoverflow.com/questions/30324760/how-to-get-an-attribute-of-an-element-from-selenium")
@@ -26,7 +26,7 @@ ui = UI(driver=driver)
 
 # New strat.
 # Login normally, then type the key to start the automation.
-# driver.login()
+driver.login()
 
 ui.go()
 driver.close()

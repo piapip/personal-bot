@@ -237,6 +237,16 @@ class Driver:
 
 
     @__check_dry_run
+    def textInput(self, selector: str, value: str) -> None:
+        print("typing by selector")
+        try:
+            self.getElementByCSS(selector=selector).send_keys(value)
+        
+        except Exception as e:
+            raise Exception("failed to text input to by selector ({}) due to: {}".format(selector, e))
+
+
+    @__check_dry_run
     def executeScript(self, script: str):
         self.driver.execute_script(script=script)
 

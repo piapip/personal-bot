@@ -76,6 +76,7 @@ class HistoryActionRow:
 
         # Action cell.
         options=(
+            ActionType.TEXT_INPUT,
             # ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
@@ -240,6 +241,9 @@ class HistoryActionRow:
 
         # Then enable those that are required for the action type.
         match action_type:
+            case ActionType.CLICK_BY_SELECTOR:
+                self.css_selector_entry.configure(state="normal", background="white")
+                self.value_entry.configure(state="normal", background="white")
             # case ActionType.CLICK_BY_NAME:
             #     self.name_entry.configure(state="normal", background="white")
             case ActionType.CLICK_BY_SELECTOR:

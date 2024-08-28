@@ -5,6 +5,7 @@ from orm.driver import Driver
 from configs.ui_configs import DEFAULT_FAILED_RESULT
 
 class ActionType(StrEnum):
+    TEXT_INPUT = "Text input"
     CLICK_BY_NAME = "Click by name"
     CLICK_BY_SELECTOR = "Click by selector"
     CLICK_BY_VALUE = "Click by value"
@@ -63,20 +64,18 @@ class Action:
     def needCSS(self) -> bool:
         """
         needCSS tells us if the current action needs CSS or not.
-    
-        Currently, the ClickBySelector action and ClickByValue needs this data.
         """
-        return (self.action_type == ActionType.CLICK_BY_SELECTOR or 
+        return (self.action_type == ActionType.TEXT_INPUT or
+                self.action_type == ActionType.CLICK_BY_SELECTOR or 
                 self.action_type == ActionType.CLICK_BY_VALUE)
     
 
     def needValue(self) -> bool:
         """
         needValue tells us if the current action needs Value or not.
-        
-        Currently, the ClickByValue action and the Sleep action needs this data.
         """
-        return (self.action_type == ActionType.CLICK_BY_VALUE or
+        return (self.action_type == ActionType.TEXT_INPUT or
+                self.action_type == ActionType.CLICK_BY_VALUE or
                 self.action_type == ActionType.SLEEP)
     
 
@@ -95,7 +94,8 @@ class Action:
         True is we need to.
         False is we don't need to.
         """
-        return (self.action_type == ActionType.CLICK_BY_SELECTOR or
+        return (self.action_type == ActionType.TEXT_INPUT or
+                self.action_type == ActionType.CLICK_BY_SELECTOR or
                 self.action_type == ActionType.CLICK_BY_VALUE or
                 self.action_type == ActionType.SWITCH_TAB)
 
@@ -118,6 +118,14 @@ class Action:
 
         try:
             match self.action_type:
+                case ActionType.TEXT_INPUT:
+                    css_selector = self.css
+                    value = self.value
+                    
+                    if css_selector == "" or value == "":
+                        raise Exception("css_selector and value are expected for the Text Input action")
+                    else:
+                        driver.textInput(selector=css_selector, value=value)
                 case ActionType.CLICK_BY_NAME:
                     # raise Exception("forced fail")
                     if self.name == "":
