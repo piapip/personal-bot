@@ -1,8 +1,10 @@
 from enum import StrEnum
 from orm.driver import Driver
+import time
 # from uuid import uuid4, UUID
 
 from configs.ui_configs import DEFAULT_FAILED_RESULT
+from helpers.action import sleepWithLog
 
 class ActionType(StrEnum):
     TEXT_INPUT = "Text input"
@@ -112,9 +114,8 @@ class Action:
     # It's expected for this action to take a long time to execute,
     # so remember to use thread to call this function.
     def executeAction(self, driver: Driver) -> None:
-        from helpers.action import sleep
         if driver.dry_run:
-            sleep(2.5)
+            time.sleep(0.5)
 
         try:
             match self.action_type:
@@ -150,7 +151,7 @@ class Action:
                 case ActionType.SWITCH_TAB:
                     driver.switchTab(tab_index=self.tab_index)
                 case ActionType.SLEEP:
-                    sleep(duration=float(self.value))
+                    sleepWithLog(duration=float(self.value))
         except Exception as e:
             self.failed_reason = "{}".format(e)
             raise e

@@ -2,9 +2,9 @@ from tkinter import ttk, simpledialog
 import tkinter as tk
 import threading
 from pathlib import Path
-from typing import List
 import os
 import re
+import time
 
 from configs.ui_configs import (
     ResultText,
@@ -14,8 +14,6 @@ from orm.driver import Driver
 from orm.scrollable_table import (
     ScrollableActionTable,
 )
-
-from helpers.action import sleep
 
 class Template:
     def __init__(self, master: ttk.Notebook, driver: Driver, name: str) -> None:
@@ -60,7 +58,9 @@ class Template:
         progress_bar_frame.columnconfigure(index=1, weight=1, uniform="tag")
         progress_bar_frame.columnconfigure(index=2, weight=10, uniform="tag")
 
-        tk.Label(master=progress_bar_frame, text="Repeat: ", width=12, anchor=tk.E, ).grid(row=0, column=0, sticky=tk.W + tk.E)
+        self.repeat_count_label_variable: tk.StringVar = tk.StringVar()
+        self.repeat_count_label_variable.set("Repeat: 0/")
+        tk.Label(master=progress_bar_frame, textvariable=self.repeat_count_label_variable, width=12, anchor=tk.E, ).grid(row=0, column=0, sticky=tk.W + tk.E)
         self.repeat_count_entry: ttk.Entry = StyledEntry(master=progress_bar_frame)
         self.repeat_count_entry.grid(row=0, column=1, sticky=tk.W, padx=5)
         self.repeat_count_entry.insert(index=0, string="1")
@@ -81,7 +81,9 @@ class Template:
     # retriggerAllRows rerun ALL the actions in the table in the sequential manner.
     # retriggerAllRows takes a lot of time to execute so it needs to be put into a thread!
     def retriggerAllRows(self) -> None:
-        # Mark that this template is running.
+        # Reset the repeat count on the UI.
+        # And mark that this template is running.
+        self.repeat_count_label_variable.set("Repeat: 0/")
         self.continue_next_step = True
         self.repeat_count_entry.config(state="readonly")
         self.action_table.add_row_button.config(state="disabled")
@@ -90,7 +92,7 @@ class Template:
 
         total_task_count = repeat * len(self.action_table.rows)
         task_done_count = 0
-        for _ in range(repeat):
+        for i in range(repeat):
             if not self.continue_next_step:
                 self.result_label.configure(text="Paused")
                 break
@@ -107,7 +109,10 @@ class Template:
                     if not self.continue_next_step:
                         break
                     else:
-                        sleep(0.5)
+                        time.sleep(0.5)
+            # Update the retry attempt count on the UI after a cycle is done. 
+            self.repeat_count_label_variable.set("Repeat: {}/".format(i+1))
+                    
 
         # Mark that this template is done running.
         self.continue_next_step = False

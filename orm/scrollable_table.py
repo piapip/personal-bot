@@ -11,7 +11,6 @@ from orm.actions_history import (
     Action,
 )
 from helpers.ui import StyledEntry
-from helpers.action import sleep
 from configs.ui_configs import (
     ResultText,
     DEFAULT_FAILED_RESULT,
