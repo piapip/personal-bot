@@ -6,3 +6,6 @@ __pycache__
 pyvenv.cfg
 history
 templates
+exe/build
+exe/dist
+exe/__main__.spec

@@ -14,3 +14,12 @@ install-dependency:
 
 run:
   py .\__main__.py
+
+install-exe-builder:
+  py -m pip install pyinstaller
+
+build-exe:
+  # png to icon converter:
+  #   https://convertio.co/
+  cd ./exe
+  pyinstaller.exe --onefile --icon="rpa_icon.ico" ../__main__.py
