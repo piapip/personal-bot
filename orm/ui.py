@@ -111,6 +111,7 @@ class UI:
         label.grid(row=0, column=0, sticky=tk.W + tk.E)
 
         options=(
+            ActionType.TEXT_INPUT,
             ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
@@ -268,6 +269,13 @@ class UI:
         self.__disableAllEntriesActionsTab()
 
         match selected_action:
+            case ActionType.TEXT_INPUT:
+                # For the "TextInput" ActionType.
+                # Affected inputs are:
+                # - CSS_Selector
+                # - Value
+                self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
+                self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
             case ActionType.CLICK_BY_NAME:
                 # For the "ClickByName" ActionType.
                 # Affected inputs are:
@@ -305,6 +313,14 @@ class UI:
             raise Exception("Please select an action first.")
         
         match action_type:
+            case ActionType.TEXT_INPUT:
+                return Action(
+                    action_type=action_type,
+                    name="",
+                    css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    tab_index=0,
+                    value=self.entries[VALUE_ENTRY_KEY].get(),
+                )
             case ActionType.CLICK_BY_NAME:
                 return Action(
                     action_type=action_type,

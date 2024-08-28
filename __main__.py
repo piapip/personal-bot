@@ -1,10 +1,20 @@
 from orm.driver import Driver
 from orm.ui import UI
 
-driver = Driver(dry_run=True, high_light_mode=False)
-# print("The current url is:"+str(driver.driver.current_url))
+# from helpers.action import sleep
+
+driver = Driver(dry_run=False, high_light_mode=False)
 
 # driver.switchTab(0)
+# driver.goto("https://stackoverflow.com/questions/30324760/how-to-get-an-attribute-of-an-element-from-selenium")
+# sleep(1)
+# driver.switchTab(0)
+# driver.clickByAttribute(
+#     selector="#answers > div",
+#     attribute="itemprop",
+#     value="suggestedAnswer",
+#     # [name="q"]
+# )
 # driver.goto("https://reservation.reginaclinic.jp/?_gl=1*t0cawi*_gcl_aw*R0NMLjE3MjQ1NjUxODIuRUFJYUlRb2JDaE1JM1o2Njc3bVBpQU1Wd1Z3UEFoMlBnemhpRUFBWUFpQUFFZ0w1aVBEX0J3RQ..*_gcl_au*MTkxMDM0NTM0OS4xNzI0NTY1MTc4#/")
 
 # driver.executeScript("window.open('');")
@@ -16,7 +26,7 @@ ui = UI(driver=driver)
 
 # New strat.
 # Login normally, then type the key to start the automation.
-# driver.login()
+driver.login()
 
 ui.go()
 driver.close()
