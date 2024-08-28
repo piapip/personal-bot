@@ -241,7 +241,7 @@ class HistoryActionRow:
 
         # Then enable those that are required for the action type.
         match action_type:
-            case ActionType.CLICK_BY_SELECTOR:
+            case ActionType.TEXT_INPUT:
                 self.css_selector_entry.configure(state="normal", background="white")
                 self.value_entry.configure(state="normal", background="white")
             # case ActionType.CLICK_BY_NAME:
