@@ -5,7 +5,6 @@ from configs.automation_configs import (
     PLAY_BUTTON,
     WORLD_SELECTOR,
     SLEEP_TIME_AFTER_LOAD,
-    RETRY_INTERVAL,
     ELEMENT_LOADING_TIMEOUT,
     USERNAME,
     PASSWORD,
@@ -90,15 +89,8 @@ class Driver:
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
             self.highLightElements(elements=[elem])
-        except TimeoutException:
-            self.driver.refresh()
-            time.sleep(RETRY_INTERVAL)
-            try:
-                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.NAME, name), message="timeout finding input for name: " + name)
-            except TimeoutException as timeoutEx:
-                raise Exception("not found element by name ({}): {}".format(name, timeoutEx.msg))
-            except Exception as e:
-                raise Exception("failed to get element by name ({}): {}".format(name, e))
+        except TimeoutException as timeoutEx:
+            raise TimeoutException("not found element by name ({}): {}".format(name, timeoutEx.msg))
         except Exception as e:
             raise Exception("failed to get element by name ({}): {}".format(name, e))
             
@@ -120,15 +112,8 @@ class Driver:
         try:
             elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=[elem])
-        except TimeoutException:
-            self.driver.refresh()
-            time.sleep(RETRY_INTERVAL)
-            try:
-                elem = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_element(By.CSS_SELECTOR, selector), message="timeout finding the selector for: {}".format(selector))
-            except TimeoutException as timeoutEx:
-                raise Exception("not found element by css ({}): {}".format(selector, timeoutEx.msg))
-            except Exception as e:
-                raise Exception("failed to get element by css ({}): {}".format(selector, e))
+        except TimeoutException as timeoutEx:
+            raise TimeoutException("not found element by css ({}): {}".format(selector, timeoutEx.msg))
         except Exception as e:
             raise Exception("failed to get element by css ({}): {}".format(selector, e))
             
@@ -150,15 +135,8 @@ class Driver:
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=elements)
-        except TimeoutException:
-            self.driver.refresh()
-            time.sleep(RETRY_INTERVAL)
-            try:
-                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
-            except TimeoutException as timeoutEx:
-                raise Exception("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
-            except Exception as e:
-                raise Exception("failed to list element by selector ({}): {}".format(selector, e))
+        except TimeoutException as timeoutEx:
+            raise TimeoutException("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
         except Exception as e:
             raise Exception("failed to list element by selector ({}): {}".format(selector, e))
         
@@ -204,15 +182,8 @@ class Driver:
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=elements)
-        except TimeoutException:
-            self.driver.refresh()
-            time.sleep(RETRY_INTERVAL)
-            try:
-                elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
-            except TimeoutException as timeoutEx:
-                raise Exception("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
-            except Exception as e:
-                raise Exception("failed to list element by selector ({}): {}".format(selector, e))
+        except TimeoutException as timeoutEx:
+            raise TimeoutException("not found elements list by selector ({}): {}".format(selector, timeoutEx.msg))
         except Exception as e:
             raise Exception("failed to list element by selector ({}): {}".format(selector, e))
         

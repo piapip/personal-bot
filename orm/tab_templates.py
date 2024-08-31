@@ -105,7 +105,7 @@ class Template:
                 finally:
                     task_done_count += 1
                     self.progress_percent.set(int(100*task_done_count/total_task_count))
-                    # This can be turned off by calling urgentPause.
+                    # This retriggerAllRows process can be turned off by calling urgentPause.
                     if not self.continue_next_step:
                         break
                     else:
