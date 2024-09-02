@@ -28,3 +28,5 @@
      But that will create more Spaghetti because my frontend skill sucks :').
      Maybe this is not how I'm supposed to create a table on the UI.
      But then, what's the proper approach?
+
+[23] Make skippable togglable.

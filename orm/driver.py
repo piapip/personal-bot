@@ -77,9 +77,6 @@ class Driver:
 
         self.getElementByCSS(LOGIN_BUTTON_SELECTOR).click()
 
-        # After logging in, direct to the list of the server.
-        # And click on the thing.
-        self.getElementByCSS(PLAY_BUTTON).click()
         time.sleep(SLEEP_TIME_AFTER_LOAD)
 
 
