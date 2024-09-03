@@ -327,9 +327,6 @@ class ScrollableActionTable:
     # addHistoryActionRow adds an action row to the list.
     # It will also render the row to the screen.
     def addHistoryActionRow(self, action: Action) -> None:
-        if action.skippable:
-            print("Skippable: {}".format(action))
-
         action_row = HistoryActionRow(
             master=self.history_table_frame,
             driver=self.driver,
