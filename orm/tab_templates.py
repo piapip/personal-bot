@@ -5,6 +5,8 @@ from pathlib import Path
 import os
 import re
 import time
+import json
+from tqdm import tqdm
 
 from configs.ui_configs import (
     ResultText,
@@ -12,6 +14,7 @@ from configs.ui_configs import (
 from helpers.ui import StyledEntry
 from orm.driver import Driver
 from orm.scrollable_table import (
+    Action,
     ScrollableActionTable,
 )
 
@@ -56,7 +59,9 @@ class Template:
         progress_bar_frame.pack(fill="x", padx=10, pady=10)
         progress_bar_frame.columnconfigure(index=0, weight=1, uniform="tag")
         progress_bar_frame.columnconfigure(index=1, weight=1, uniform="tag")
-        progress_bar_frame.columnconfigure(index=2, weight=10, uniform="tag")
+        progress_bar_frame.columnconfigure(index=2, weight=1, uniform="tag")
+        progress_bar_frame.columnconfigure(index=3, weight=1, uniform="tag")
+        progress_bar_frame.columnconfigure(index=4, weight=8, uniform="tag")
 
         self.repeat_count_label_variable: tk.StringVar = tk.StringVar()
         self.repeat_count_label_variable.set("Repeat: 0/")
@@ -65,9 +70,18 @@ class Template:
         self.repeat_count_entry.grid(row=0, column=1, sticky=tk.W, padx=5)
         self.repeat_count_entry.insert(index=0, string="1")
 
+        self.delay_timer_variable: tk.StringVar = tk.StringVar()
+        self.delay_timer_variable.set("Delay: ")
+        tk.Label(master=progress_bar_frame, textvariable=self.delay_timer_variable, width=12, anchor=tk.E, ).grid(row=0, column=2, sticky=tk.W + tk.E)
+        self.delay_timer_entry: ttk.Entry = StyledEntry(master=progress_bar_frame)
+        self.delay_timer_entry.grid(row=0, column=3, sticky=tk.W, padx=5)
+        self.delay_timer_entry.insert(index=0, string="0")
+
         self.progress_percent = tk.IntVar()
         self.progress_bar: ttk.Progressbar = ttk.Progressbar(master=progress_bar_frame, orient=tk.HORIZONTAL, variable=self.progress_percent)
-        self.progress_bar.grid(row=0, column=2, sticky=tk.W + tk.E)
+        self.progress_bar.grid(row=0, column=4, sticky=tk.W + tk.E)
+
+        self.delay_thread = threading.Event()
 
         # [2]
         # Now actually filling in the table of the middle_frame.
@@ -86,9 +100,11 @@ class Template:
         self.repeat_count_label_variable.set("Repeat: 0/")
         self.continue_next_step = True
         self.repeat_count_entry.config(state="readonly")
+        self.delay_timer_entry.config(state="readonly")
         self.action_table.add_row_button.config(state="disabled")
 
         repeat = int(self.repeat_count_entry.get())
+        delay_timer = int(self.delay_timer_entry.get())
 
         total_task_count = repeat * len(self.action_table.rows)
         task_done_count = 0
@@ -97,11 +113,15 @@ class Template:
                 self.result_label.configure(text="Paused")
                 break
 
+            success_attempt = False
             for row in self.action_table.rows:
                 try:
                     row.retriggerHistoryAction()
                 except Exception:
+                    success_attempt = False
                     break
+                else:
+                    success_attempt = True
                 finally:
                     task_done_count += 1
                     self.progress_percent.set(int(100*task_done_count/total_task_count))
@@ -110,6 +130,18 @@ class Template:
                         break
                     else:
                         time.sleep(0.5)
+
+            # If the template executes properly from the beginning to the end,
+            # let it sleep for a moment until its next turn.
+            if success_attempt and self.continue_next_step:
+                update_frequency = 0.1
+                self.delay_thread.clear()
+                for _ in tqdm(range(int(delay_timer/update_frequency))):
+                    # Using delay_thread so I can interrupt this sleeping by calling an event
+                    # instead of killing thread forcefully.
+                    self.delay_thread.wait(timeout=update_frequency)
+                self.result_label.configure(text=ResultText.SUCCESS)
+
             # Update the retry attempt count on the UI after a cycle is done. 
             self.repeat_count_label_variable.set("Repeat: {}/".format(i+1))
                     
@@ -117,6 +149,7 @@ class Template:
         # Mark that this template is done running.
         self.continue_next_step = False
         self.repeat_count_entry.config(state="normal")
+        self.delay_timer_entry.config(state="normal")
         self.action_table.add_row_button.config(state="normal")
 
 
@@ -132,6 +165,51 @@ class Template:
         if self.continue_next_step:
             self.continue_next_step = False
             self.result_label.configure(text=ResultText.PAUSE_NOTIFICATION)
+            time.sleep(0.125)
+            self.delay_thread.set() # Pause the delay timer if the template's waiting for its next turn.
+
+    
+    # loadData reads data from the JSON file
+    # and fill up the template's delay data and fill up the table with rows.
+    def loadData(self, filename: str) -> None:
+        try:
+            with open(filename, "r") as f:
+                data: dict[str, any] = json.load(f)
+            self.delay_timer_entry.delete(0, tk.END)
+            self.delay_timer_entry.insert(index=0, string=data["delay"])
+            actions: list[dict] = data["actions"]
+
+            for action in actions:
+                # Closure problem with python...
+                self.action_table.addHistoryActionRow(action=Action(**action))
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            raise(e)
+        pass
+
+
+    # save exports the template to json.
+    def save(self, filename: str) -> None:
+        print("Saving...")
+
+        # Update current rows from the UI and then
+        # extract actions from all the rows.
+        actions: list[Action] = []
+        for row in self.action_table.rows:
+            row.updateAction()
+            actions.append(row.action)
+        
+        export_data: dict[str, any] = {
+            "delay": int(self.delay_timer_entry.get()),
+            "actions": actions,
+        }
+
+        # Extract actions from all the rows.
+        with open(filename, "w") as f:
+            json.dump(export_data, default=lambda o: o.encode(), indent=4, fp=f)
+        
+        print("Done saving...")
 
 
 class TabTemplates:
@@ -266,7 +344,7 @@ class TabTemplates:
         current_template: Template = self.templates[current_tab_index]
         
         filename = self.history_folder + "/" + str(current_tab_index) + "_" + current_template.name + ".json"
-        current_template.action_table.save(filename=filename)
+        current_template.save(filename=filename)
 
 
     # __saveAll traverse through all the templates, updates, and saves all of them. 
@@ -274,7 +352,7 @@ class TabTemplates:
         for i in range(len(self.templates)):
             template = self.templates[i]
             filename = self.history_folder + "/" + str(i) + "_" + template.name + ".json"
-            template.action_table.save(filename=filename)
+            template.save(filename=filename)
 
 
     # load pulls all the templates from the previous attempts and put them to the screen.
@@ -289,7 +367,7 @@ class TabTemplates:
                 master=self.template_tabs_control,
                 driver=self.driver,
                 name=template_name)
-            template.action_table.loadData(self.history_folder + "/" + file_name)
+            template.loadData(filename=self.history_folder + "/" + file_name)
             self.template_tabs_control.add(child=template.main_ui, text=template.name)
             self.templates.append(template)
 
