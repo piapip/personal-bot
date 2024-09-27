@@ -404,6 +404,8 @@ class ScrollableActionTable:
 
     # loadData reads data from the JSON file
     # and fill up the table with rows.
+    # Currently, this function should only be used for the history loading!!!
+    # The format of the history file and the format of the template files are different!!!  
     def loadData(self, filename: str) -> None:
         try:
             with open(filename, "r") as f:

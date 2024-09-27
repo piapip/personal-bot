@@ -22,6 +22,9 @@ class Action:
             css: str,
             value: str,
             tab_index: int,
+            # TODO: Make skippable togglable. 
+            # Currently, skippable can be used by assigned manually in the json file.
+            skippable: bool = False,
             # Normally, we don't need to provide failed_reason,
             # I need to initiate it so Python can translate from dict to class. 
             failed_reason: str = DEFAULT_FAILED_RESULT) -> None:
@@ -42,6 +45,7 @@ class Action:
         self.value: str = value
         self.tab_index: int = tab_index
         self.failed_reason: str = failed_reason
+        self.skippable: bool = skippable
 
     
     def __str__(self) -> str:
@@ -154,7 +158,10 @@ class Action:
                     sleepWithLog(duration=float(self.value))
         except Exception as e:
             self.failed_reason = "{}".format(e)
-            raise e
+            if self.skippable:
+                print("Got this error but skippable so ignore: {}".format(e))
+            else:
+                raise e
         else:
             self.failed_reason = ""
         finally:
