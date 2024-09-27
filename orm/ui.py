@@ -318,7 +318,6 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.CLICK_BY_NAME:
@@ -326,7 +325,6 @@ class UI:
                     action_type=action_type,
                     name=self.entries[NAME_ENTRY_KEY].get(),
                     css="",
-                    tab_index=0,
                     value="",
                 )                
             case ActionType.CLICK_BY_SELECTOR:
@@ -334,7 +332,6 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
                     value="",
                 )
             case ActionType.CLICK_BY_VALUE:
@@ -342,19 +339,17 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.SWITCH_TAB:
-                tab_index = self.entries[TAB_INDEX_KEY].get()
+                value = self.entries[VALUE_ENTRY_KEY].get()
 
-                if tab_index.isdigit():
+                if value.isdigit():
                     return Action(
                         action_type=action_type,
                         name="",
                         css="",
-                        tab_index=int(tab_index),
-                        value=self.entries[VALUE_ENTRY_KEY].get(),
+                        value=value,
                     )
                 else:
                     raise Exception("Tab index must be a positive number for the Switching Tab action!")           
@@ -363,7 +358,6 @@ class UI:
                     action_type=action_type,
                     name="",
                     css="",
-                    tab_index=0,
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
     

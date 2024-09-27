@@ -21,7 +21,6 @@ class Action:
             name: str,
             css: str,
             value: str,
-            tab_index: int,
             # TODO: Make skippable togglable. 
             # Currently, skippable can be used by assigned manually in the json file.
             skippable: bool = False,
@@ -43,7 +42,6 @@ class Action:
         self.name: str = name
         self.css: str = css
         self.value: str = value
-        self.tab_index: int = tab_index
         self.failed_reason: str = failed_reason
         self.skippable: bool = skippable
 
@@ -82,16 +80,8 @@ class Action:
         """
         return (self.action_type == ActionType.TEXT_INPUT or
                 self.action_type == ActionType.CLICK_BY_VALUE or
-                self.action_type == ActionType.SLEEP)
-    
-
-    def needTabIndex(self) -> bool:
-        """
-        needTabIndex tells us if the current action needs tab_index or not.
-    
-        Currently, only the SwitchTab action needs this data.
-        """
-        return self.action_type == ActionType.SWITCH_TAB
+                self.action_type == ActionType.SLEEP or
+                self.action_type == ActionType.SWITCH_TAB)
 
 
     def needToStore(self) -> bool:
@@ -153,7 +143,9 @@ class Action:
                     else:
                         driver.clickByValue(selector=css_selector, value=value)
                 case ActionType.SWITCH_TAB:
-                    driver.switchTab(tab_index=self.tab_index)
+                    if not self.value.isdigit():
+                        raise Exception("value for switching tab must be a number")
+                    driver.switchTab(tab_index=int(self.value))
                 case ActionType.SLEEP:
                     sleepWithLog(duration=float(self.value))
         except Exception as e:
