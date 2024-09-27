@@ -54,30 +54,6 @@ class Driver:
         # goto redirect the browser to the given link.
         self.driver.get(link)
         time.sleep(SLEEP_TIME_AFTER_LOAD)
-        
-
-    @__check_dry_run
-    def login(self):
-        # Go into the page.
-        self.goto(LOBBY_URL)
-        elemLogin = self.getElementByValue(selector=LOGIN_SECTION_SELECTOR, value="Log in")
-        time.sleep(0.1)
-        elemLogin.click()
-        time.sleep(0.1)
-        
-        # Type in email and password
-        elemEmail = self.getElementByName(name="email")
-        elemPassword = self.getElementByName(name="password")
-        
-        time.sleep(0.1)
-        elemEmail.send_keys(USERNAME)
-        time.sleep(0.1)
-        elemPassword.send_keys(PASSWORD)
-        time.sleep(0.2)
-
-        self.getElementByCSS(LOGIN_BUTTON_SELECTOR).click()
-
-        time.sleep(SLEEP_TIME_AFTER_LOAD)
 
 
     @__check_dry_run
