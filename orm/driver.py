@@ -2,8 +2,6 @@ from configs.automation_configs import (
     SLEEP_TIME_AFTER_LOAD,
     ELEMENT_LOADING_TIMEOUT,
 
-    HIGHLIGHT_ELEMENT_BORDER,
-    HIGHLIGHT_ELEMENT_COLOR,
     HIGHLIGHT_ELEMENT_DURATION,
 )
 from selenium import webdriver
