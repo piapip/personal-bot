@@ -1,3 +1,5 @@
+Max index: 24.
+
 [3] Add export/import option for the History tab.
 
 [5] Hit critical performance issue when there are multiple history actions.
@@ -25,7 +27,3 @@
      But then, what's the proper approach?
 
 [23] Make skippable togglable.
-
-[24] Add select action.
-     [OK] Implement "select" action to the driver.
-     [] Add the select action to the UI.

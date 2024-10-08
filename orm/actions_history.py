@@ -11,6 +11,7 @@ class ActionType(StrEnum):
     CLICK_BY_NAME = "Click by name"
     CLICK_BY_SELECTOR = "Click by selector"
     CLICK_BY_VALUE = "Click by value"
+    SELECT_DROPDOWN = "Select dropdown"
     SWITCH_TAB = "Switch tab"
     SLEEP = "Sleep"
 
@@ -74,7 +75,8 @@ class Action:
         """
         return (self.action_type == ActionType.TEXT_INPUT or
                 self.action_type == ActionType.CLICK_BY_SELECTOR or 
-                self.action_type == ActionType.CLICK_BY_VALUE)
+                self.action_type == ActionType.CLICK_BY_VALUE or
+                self.action_type == ActionType.SELECT_DROPDOWN)
     
 
     def needValue(self) -> bool:
@@ -84,7 +86,8 @@ class Action:
         return (self.action_type == ActionType.TEXT_INPUT or
                 self.action_type == ActionType.CLICK_BY_VALUE or
                 self.action_type == ActionType.SLEEP or
-                self.action_type == ActionType.SWITCH_TAB)
+                self.action_type == ActionType.SWITCH_TAB or
+                self.action_type == ActionType.SELECT_DROPDOWN)
     
 
     def needHTMLAttribute(self) -> bool:
@@ -103,7 +106,8 @@ class Action:
         return (self.action_type == ActionType.TEXT_INPUT or
                 self.action_type == ActionType.CLICK_BY_SELECTOR or
                 self.action_type == ActionType.CLICK_BY_VALUE or
-                self.action_type == ActionType.SWITCH_TAB)
+                self.action_type == ActionType.SWITCH_TAB or
+                self.action_type == ActionType.SELECT_DROPDOWN)
 
 
     def hasError(self) -> bool:
@@ -156,6 +160,14 @@ class Action:
                             driver.clickByAttribute(selector=css_selector, html_attribute=html_attribute, value=value)
                         else:
                             driver.clickByValue(selector=css_selector, value=value)
+                case ActionType.SELECT_DROPDOWN:
+                    css_selector = self.css
+                    value = self.value
+                    
+                    if css_selector == "" or value == "":
+                        raise Exception("css_selector and value are expected for the Select Dropdown action")
+                    else:
+                        driver.select(selector=css_selector, value=value)
                 case ActionType.SWITCH_TAB:
                     if not self.value.isdigit():
                         raise Exception("value for switching tab must be a number")

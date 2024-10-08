@@ -115,6 +115,7 @@ class UI:
             ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
+            ActionType.SELECT_DROPDOWN,
             ActionType.SWITCH_TAB,
             ActionType.SLEEP,
         )
@@ -293,6 +294,13 @@ class UI:
                 # - Value
                 self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
                 self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
+            case ActionType.SELECT_DROPDOWN:
+                # For the "SelectDropdown" ActionType.
+                # Affected inputs are:
+                # - CSS_Selector
+                # - Value
+                self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
+                self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
             case ActionType.SWITCH_TAB:
                 # For the "SwitchTab" ActionType.
                 # Affected inputs are:
@@ -338,6 +346,14 @@ class UI:
                     value="",
                 )
             case ActionType.CLICK_BY_VALUE:
+                return Action(
+                    action_type=action_type,
+                    name="",
+                    css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    html_attribute="",
+                    value=self.entries[VALUE_ENTRY_KEY].get(),
+                )
+            case ActionType.SELECT_DROPDOWN:
                 return Action(
                     action_type=action_type,
                     name="",

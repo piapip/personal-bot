@@ -79,6 +79,7 @@ class HistoryActionRow:
             # ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
+            ActionType.SELECT_DROPDOWN,
             ActionType.SWITCH_TAB,
             ActionType.SLEEP,
         )
@@ -249,6 +250,9 @@ class HistoryActionRow:
             case ActionType.CLICK_BY_VALUE:
                 self.css_selector_entry.configure(state="normal", background="white")
                 self.html_attribute_entry.configure(state="normal", background="white")
+                self.value_entry.configure(state="normal", background="white")
+            case ActionType.SELECT_DROPDOWN:
+                self.css_selector_entry.configure(state="normal", background="white")
                 self.value_entry.configure(state="normal", background="white")
             case ActionType.SWITCH_TAB:
                 self.value_entry.configure(state="normal", background="white")

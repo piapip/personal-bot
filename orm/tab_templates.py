@@ -133,7 +133,7 @@ class Template:
 
             # If the template executes properly from the beginning to the end,
             # let it sleep for a moment until its next turn.
-            if success_attempt and self.continue_next_step:
+            if success_attempt and self.continue_next_step and delay_timer > 0:
                 update_frequency = 0.1
                 self.delay_thread.clear()
                 for _ in tqdm(range(int(delay_timer/update_frequency))):
