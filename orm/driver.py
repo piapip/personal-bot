@@ -229,6 +229,6 @@ class Driver:
         for element in elements:
             original_style = element.get_attribute('style')
             moveToView(element=element)
-            applyStyle(element=element, style="border: {}px solid {};".format(HIGHLIGHT_ELEMENT_BORDER, HIGHLIGHT_ELEMENT_COLOR))
+            applyStyle(element=element, style="outline:dashed;outline-offset:4px;")
             time.sleep(HIGHLIGHT_ELEMENT_DURATION)
             applyStyle(element=element, style=original_style)

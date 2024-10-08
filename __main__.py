@@ -3,7 +3,7 @@ from orm.ui import UI
 
 # from helpers.action import sleepWithLog
 
-driver = Driver(dry_run=False, high_light_mode=False)
+driver = Driver(dry_run=False, high_light_mode=True)
 
 # # Test "Click by attribute"
 # driver.switchTab(0)
