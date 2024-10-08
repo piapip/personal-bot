@@ -1,4 +1,4 @@
-Max index: 24.
+Max index: 25.
 
 [3] Add export/import option for the History tab.
 

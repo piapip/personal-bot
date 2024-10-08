@@ -253,11 +253,24 @@ class TabTemplates:
         self.rename_button = tk.Button(master=self.top_frame, text="Rename", width="6", command=self.__onRenameTab)
         self.rename_button.pack(side=tk.LEFT)
 
-        self.import_button = tk.Button(master=self.top_frame, text="Import", width="6")
-        self.import_button.pack(side=tk.RIGHT)
+        debug_button_text = tk.StringVar()
+        debug_button_text.set("Start Debug")
+        self.debug_button = tk.Button(master=self.top_frame, textvariable=debug_button_text, width="10")
+        self.debug_button.pack(side=tk.RIGHT)
+        def enableDebug():
+            self.driver.high_light_mode = True
+            debug_button_text.set("Stop Debug")
+            self.debug_button.configure(background="#c3ffb4", command=stopDebug)
 
-        self.export_button = tk.Button(master=self.top_frame, text="Export", width="6")
-        self.export_button.pack(side=tk.RIGHT)
+        def stopDebug():
+            self.driver.high_light_mode = False
+            debug_button_text.set("Start Debug")
+            self.debug_button.configure(background="SystemButtonFace", command=enableDebug)
+        
+        self.debug_button.configure(command=enableDebug)
+
+        # self.export_button = tk.Button(master=self.top_frame, text="Export", width="6")
+        # self.export_button.pack(side=tk.RIGHT)
 
         # [2] Setup the template zone for the middle_frame.
         self.template_tabs_control: ttk.Notebook = ttk.Notebook(master=self.middle_frame, padding=(0, 4, 0, 0))
