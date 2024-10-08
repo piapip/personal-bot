@@ -115,6 +115,7 @@ class UI:
             ActionType.CLICK_BY_NAME,
             ActionType.CLICK_BY_SELECTOR,
             ActionType.CLICK_BY_VALUE,
+            ActionType.SELECT_DROPDOWN,
             ActionType.SWITCH_TAB,
             ActionType.SLEEP,
         )
@@ -293,6 +294,13 @@ class UI:
                 # - Value
                 self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
                 self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
+            case ActionType.SELECT_DROPDOWN:
+                # For the "SelectDropdown" ActionType.
+                # Affected inputs are:
+                # - CSS_Selector
+                # - Value
+                self.__enableInputOptionsActionsTab(answer_label=CSS_SELECTOR_ENTRY_KEY, default_text="Input css selector please")
+                self.__enableInputOptionsActionsTab(answer_label=VALUE_ENTRY_KEY, default_text="Input value please")
             case ActionType.SWITCH_TAB:
                 # For the "SwitchTab" ActionType.
                 # Affected inputs are:
@@ -318,7 +326,7 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
+                    html_attribute="",
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.CLICK_BY_NAME:
@@ -326,7 +334,7 @@ class UI:
                     action_type=action_type,
                     name=self.entries[NAME_ENTRY_KEY].get(),
                     css="",
-                    tab_index=0,
+                    html_attribute="",
                     value="",
                 )                
             case ActionType.CLICK_BY_SELECTOR:
@@ -334,7 +342,7 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
+                    html_attribute="",
                     value="",
                 )
             case ActionType.CLICK_BY_VALUE:
@@ -342,19 +350,27 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
-                    tab_index=0,
+                    html_attribute="",
+                    value=self.entries[VALUE_ENTRY_KEY].get(),
+                )
+            case ActionType.SELECT_DROPDOWN:
+                return Action(
+                    action_type=action_type,
+                    name="",
+                    css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    html_attribute="",
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.SWITCH_TAB:
-                tab_index = self.entries[TAB_INDEX_KEY].get()
+                value = self.entries[VALUE_ENTRY_KEY].get()
 
-                if tab_index.isdigit():
+                if value.isdigit():
                     return Action(
                         action_type=action_type,
                         name="",
                         css="",
-                        tab_index=int(tab_index),
-                        value=self.entries[VALUE_ENTRY_KEY].get(),
+                        html_attribute="",
+                        value=value,
                     )
                 else:
                     raise Exception("Tab index must be a positive number for the Switching Tab action!")           
@@ -363,7 +379,6 @@ class UI:
                     action_type=action_type,
                     name="",
                     css="",
-                    tab_index=0,
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
     

@@ -6,11 +6,12 @@ from configs.automation_configs import (
     HIGHLIGHT_ELEMENT_COLOR,
     HIGHLIGHT_ELEMENT_DURATION,
 )
-from selenium import webdriver 
+from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.remote.webelement import WebElement
 from typing import List
 import time
@@ -97,7 +98,6 @@ class Driver:
 
     @__check_dry_run
     def getElementByValue(self, selector: str, value: str) -> WebElement:
-        # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=elements)
@@ -143,8 +143,7 @@ class Driver:
 
 
     @__check_dry_run
-    def getByAttribute(self, selector: str, value: str, attribute: str) -> WebElement:
-        # Ikariam is very laggy, so if it's timeout, let's refresh once and try again. 
+    def getByAttribute(self, selector: str, html_attribute: str, value: str) -> WebElement:
         try:
             elements = WebDriverWait(driver=self.driver, timeout=ELEMENT_LOADING_TIMEOUT).until(lambda x: x.find_elements(by=By.CSS_SELECTOR, value=selector), message="timeout finding the selector for: {}".format(selector))
             self.highLightElements(elements=elements)
@@ -153,19 +152,28 @@ class Driver:
         except Exception as e:
             raise Exception("failed to list element by selector ({}): {}".format(selector, e))
         
+        print("strict lookup...")
         for e in elements:
-            print("attribute: {}".format(e.get_attribute(attribute)))
-            if e.get_attribute(attribute) == value:
+            # print("html_attribute: {}".format(e.get_attribute(html_attribute)))
+            if e.get_attribute(html_attribute) == value:
+                print("got strict html_attribute: {}".format(e.text))
                 return e
 
-        raise Exception("selector ({}) - attribute ({}) - value ({}) not found".format(selector, attribute, value))
+        print("partial lookup...")
+        for e in elements:
+            # print("html_attribute: {}".format(e.get_attribute(html_attribute)))
+            if value in e.get_attribute(html_attribute):
+                print("got partial html_attribute: {}".format(e.text))
+                return e
+
+        raise Exception("selector ({}) - attribute ({}) - value ({}) not found".format(selector, html_attribute, value))
     
 
     @__check_dry_run
-    def clickByAttribute(self, selector: str, value: str, attribute: str) -> None:
+    def clickByAttribute(self, selector: str, html_attribute: str, value: str) -> None:
         print("executing click by attribute")
         try:
-            self.getByAttribute(selector=selector, value=value, attribute=attribute).click()
+            self.getByAttribute(selector=selector, value=value, html_attribute=html_attribute).click()
         
         except Exception as e:
             raise Exception("failed to click element by attribute ({}) due to: {}".format(selector, e))
@@ -181,6 +189,21 @@ class Driver:
             raise Exception("failed to text input to by selector ({}) due to: {}".format(selector, e))
 
 
+    @__check_dry_run
+    def select(self, selector: str, value: str) -> None:
+        print("executing select dropdown")
+        try:
+            print("attempt to select by visible text")
+            element = self.getElementByCSS(selector=selector)
+            select_element = Select(webelement=element)
+            select_element.select_by_visible_text(text=value)
+        
+        except Exception as e:
+            print("failed to select ({})-({}) due to: {}".format(selector, value, e))
+            print("attempt to select by value")
+            select_element.select_by_value(value=value)
+
+    
     @__check_dry_run
     def executeScript(self, script: str):
         self.driver.execute_script(script=script)
