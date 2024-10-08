@@ -6,11 +6,12 @@ from configs.automation_configs import (
     HIGHLIGHT_ELEMENT_COLOR,
     HIGHLIGHT_ELEMENT_DURATION,
 )
-from selenium import webdriver 
+from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.remote.webelement import WebElement
 from typing import List
 import time
@@ -188,6 +189,21 @@ class Driver:
             raise Exception("failed to text input to by selector ({}) due to: {}".format(selector, e))
 
 
+    @__check_dry_run
+    def select(self, selector: str, value: str) -> None:
+        print("executing select dropdown")
+        try:
+            print("attempt to select by visible text")
+            element = self.getElementByCSS(selector=selector)
+            select_element = Select(webelement=element)
+            select_element.select_by_visible_text(text=value)
+        
+        except Exception as e:
+            print("failed to select ({})-({}) due to: {}".format(selector, value, e))
+            print("attempt to select by value")
+            select_element.select_by_value(value=value)
+
+    
     @__check_dry_run
     def executeScript(self, script: str):
         self.driver.execute_script(script=script)

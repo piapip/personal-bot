@@ -25,3 +25,7 @@
      But then, what's the proper approach?
 
 [23] Make skippable togglable.
+
+[24] Add select action.
+     [OK] Implement "select" action to the driver.
+     [] Add the select action to the UI.
