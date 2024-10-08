@@ -20,6 +20,7 @@ class Action:
             action_type:ActionType,
             name: str,
             css: str,
+            html_attribute: str,
             value: str,
             # TODO: Make skippable togglable. 
             # Currently, skippable can be used by assigned manually in the json file.
@@ -41,16 +42,18 @@ class Action:
         self.action_type: ActionType = action_type
         self.name: str = name
         self.css: str = css
+        self.html_attribute: str = html_attribute
         self.value: str = value
         self.failed_reason: str = failed_reason
         self.skippable: bool = skippable
 
     
     def __str__(self) -> str:
-        return "Action: {}\nName: {}\nCSS: {}\nValue: {}\nError: {}\n".format(
+        return "Action: {}\nName: {}\nCSS: {}\nHTML Attribute: {}\nValue: {}\nError: {}\n".format(
             self.action_type,
             self.name,
             self.css,
+            self.html_attribute,
             self.value,
             self.failed_reason,
         )
@@ -82,6 +85,13 @@ class Action:
                 self.action_type == ActionType.CLICK_BY_VALUE or
                 self.action_type == ActionType.SLEEP or
                 self.action_type == ActionType.SWITCH_TAB)
+    
+
+    def needHTMLAttribute(self) -> bool:
+        """
+        needHTMLAttribute tells us if the current action needs HTML Attribute or not.
+        """
+        return (self.action_type == ActionType.CLICK_BY_VALUE)
 
 
     def needToStore(self) -> bool:
@@ -136,12 +146,16 @@ class Action:
                         driver.clickByCSS(selector=css_selector)
                 case ActionType.CLICK_BY_VALUE:
                     css_selector = self.css
+                    html_attribute = self.html_attribute
                     value = self.value
                     
                     if css_selector == "" or value == "":
                         raise Exception("css_selector and value are expected for the Click by Value action")
                     else:
-                        driver.clickByValue(selector=css_selector, value=value)
+                        if html_attribute != "":
+                            driver.clickByAttribute(selector=css_selector, html_attribute=html_attribute, value=value)
+                        else:
+                            driver.clickByValue(selector=css_selector, value=value)
                 case ActionType.SWITCH_TAB:
                     if not self.value.isdigit():
                         raise Exception("value for switching tab must be a number")

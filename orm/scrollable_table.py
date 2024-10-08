@@ -102,6 +102,13 @@ class HistoryActionRow:
         if not action.needCSS(): # Then check if I need to disable the entry
             self.css_selector_entry.config(state="readonly")
 
+        # HTML Attribute cell.
+        self.html_attribute_entry: ttk.Entry = StyledEntry(master=self.row_frame)
+        self.html_attribute_entry.grid(row=0, column=3, sticky=tk.E + tk.W)
+        self.html_attribute_entry.insert(tk.END, action.html_attribute) # Fill data
+        if not action.needHTMLAttribute(): # Then check if I need to disable the entry
+            self.html_attribute_entry.config(state="readonly")
+
         # Value cell.
         self.value_entry: ttk.Entry = StyledEntry(master=self.row_frame)
         self.value_entry.grid(row=0, column=4, sticky=tk.E + tk.W)
@@ -151,6 +158,12 @@ class HistoryActionRow:
         if new_css_selector != self.action.css:
             print("new css: {}!".format(new_css_selector))
             self.action.css = new_css_selector
+            has_new_change = True
+
+        new_html_attribute = self.html_attribute_entry.get()
+        if new_html_attribute != self.action.html_attribute:
+            print("new html_attribute: {}!".format(new_html_attribute))
+            self.action.html_attribute = new_html_attribute
             has_new_change = True
 
         new_value = self.value_entry.get()
@@ -221,6 +234,7 @@ class HistoryActionRow:
         # Disable all the entries of the row.
         # self.name_entry.config(state="readonly")
         self.css_selector_entry.config(state="readonly")
+        self.html_attribute_entry.config(state="readonly")
         self.value_entry.config(state="readonly")
 
         # Then enable those that are required for the action type.
@@ -234,6 +248,7 @@ class HistoryActionRow:
                 self.css_selector_entry.configure(state="normal", background="white")
             case ActionType.CLICK_BY_VALUE:
                 self.css_selector_entry.configure(state="normal", background="white")
+                self.html_attribute_entry.configure(state="normal", background="white")
                 self.value_entry.configure(state="normal", background="white")
             case ActionType.SWITCH_TAB:
                 self.value_entry.configure(state="normal", background="white")
@@ -291,10 +306,9 @@ class ScrollableActionTable:
         self.headers: list[TableHeader] = [
             TableHeader(text="", weight=3),                # Column for the play button.
             TableHeader(text="Action", weight=12),         # Column for the action.
-            # TableHeader(text="Name", weight=15),         #
             TableHeader(text="CSS Selector", weight=15),   #
-            TableHeader(text="", weight=13),          #
-            TableHeader(text="Value", weight=8),       #
+            TableHeader(text="HTML Attribute", weight=13), #
+            TableHeader(text="Value", weight=8),           #
             TableHeader(text="", weight=6),                # Column for the reposition buttons
             TableHeader(text="", weight=5),                # Column for the Remove button.
         ]
@@ -356,6 +370,7 @@ class ScrollableActionTable:
                 name="",
                 action_type="",
                 css="",
+                html_attribute="",
                 failed_reason="",
                 value="",
             ),

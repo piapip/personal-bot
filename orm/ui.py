@@ -318,6 +318,7 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    html_attribute="",
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.CLICK_BY_NAME:
@@ -325,6 +326,7 @@ class UI:
                     action_type=action_type,
                     name=self.entries[NAME_ENTRY_KEY].get(),
                     css="",
+                    html_attribute="",
                     value="",
                 )                
             case ActionType.CLICK_BY_SELECTOR:
@@ -332,6 +334,7 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    html_attribute="",
                     value="",
                 )
             case ActionType.CLICK_BY_VALUE:
@@ -339,6 +342,7 @@ class UI:
                     action_type=action_type,
                     name="",
                     css=self.entries[CSS_SELECTOR_ENTRY_KEY].get(),
+                    html_attribute="",
                     value=self.entries[VALUE_ENTRY_KEY].get(),
                 )
             case ActionType.SWITCH_TAB:
@@ -349,6 +353,7 @@ class UI:
                         action_type=action_type,
                         name="",
                         css="",
+                        html_attribute="",
                         value=value,
                     )
                 else:
