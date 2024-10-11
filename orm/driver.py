@@ -105,6 +105,7 @@ class Driver:
             raise Exception("failed to list element by selector ({}): {}".format(selector, e))
         
         for e in elements:
+            print(e.text)
             if e.text == value:
                 return e
         
