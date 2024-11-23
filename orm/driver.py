@@ -168,8 +168,12 @@ class Driver:
 
         print("partial lookup...")
         for e in elements:
-            # print("html_attribute: {}".format(e.get_attribute(html_attribute)))
-            if value in e.get_attribute(html_attribute):
+            attributes = e.get_attribute(html_attribute)
+            # Perform this check to avoid nil dereference error for the next "in" operator.
+            if attributes == None:
+                continue
+            
+            if value in attributes:
                 print("got partial html_attribute: {}".format(e.text))
                 return e
 

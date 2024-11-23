@@ -13,6 +13,7 @@ from orm.actions_history import (
 from helpers.ui import StyledEntry
 from configs.ui_configs import (
     ResultText,
+    SYSTEM_DEFAULT_COLOR,
     DEFAULT_FAILED_RESULT,
     IN_PROGRESS_BG_COLOR,
     FAILED_BG_COLOR,
@@ -70,8 +71,23 @@ class HistoryActionRow:
                 
             threading.Thread(target=replay).start()
 
-        self.replay_button: tk.Button = tk.Button(master=self.row_frame, text="Run", anchor=tk.W, command=replay_in_thread)
-        self.replay_button.grid(row=0, column=0, sticky=tk.E + tk.W)
+        replay_button_border_color = SYSTEM_DEFAULT_COLOR
+        if action.failed_reason == "":
+            replay_button_border_color = "green"
+        elif action.failed_reason != DEFAULT_FAILED_RESULT:
+            replay_button_border_color = "red"
+        
+        self.replay_button_border: tk.Frame = tk.Frame(
+            master=self.row_frame,
+            highlightbackground=replay_button_border_color,
+            highlightcolor=replay_button_border_color,
+            highlightthickness=1,
+            bd=0,
+        )
+        self.replay_button_border.grid(row=0, column=0, sticky=tk.E + tk.W)
+        
+        self.replay_button: tk.Button = tk.Button(master=self.replay_button_border, text="Run", command=replay_in_thread)
+        self.replay_button.pack(fill="x")
 
         # Action cell.
         options=(
@@ -174,6 +190,10 @@ class HistoryActionRow:
             has_new_change = True
         
         if has_new_change:
+            self.replay_button_border.config(
+                highlightbackground=SYSTEM_DEFAULT_COLOR,
+                highlightcolor=SYSTEM_DEFAULT_COLOR,
+            )
             # Reset the previous attempt's failed reason if the action has any change.
             self.action.failed_reason = DEFAULT_FAILED_RESULT
 
@@ -198,10 +218,18 @@ class HistoryActionRow:
         except Exception as e:
             # Update the result label with error if there's an error
             self.result_label.configure(background=FAILED_BG_COLOR, text=ResultText.FAILED.format(e))
+            self.replay_button_border.config(
+                highlightbackground="red",
+                highlightcolor="red",
+            )
             raise(e)
         else:
             # Else, mark it as done.
             self.result_label.configure(background=SUCCESS_BG_COLOR, text=ResultText.SUCCESS)
+            self.replay_button_border.config(
+                highlightbackground="green",
+                highlightcolor="green",
+            )
         finally:
             self.unfreeze()
 
@@ -219,7 +247,7 @@ class HistoryActionRow:
     # so the row can be interactive again after the automation is done. 
     def unfreeze(self) -> None:
         # Block the execute button to prevent double clicking.
-        self.replay_button.config(state="normal", background="SystemButtonFace")
+        self.replay_button.config(state="normal", background=SYSTEM_DEFAULT_COLOR)
         # Prevent the remove button can be clicked during the automation.
         self.remove_button.config(state="normal")
 
@@ -229,6 +257,10 @@ class HistoryActionRow:
         and re-render the data blurring."""
         if self.action.action_type != action_type:
             self.action.failed_reason = DEFAULT_FAILED_RESULT
+            self.replay_button_border.config(
+                highlightbackground=SYSTEM_DEFAULT_COLOR,
+                highlightcolor=SYSTEM_DEFAULT_COLOR,
+            )
 
         self.action.action_type = action_type
 
@@ -375,7 +407,7 @@ class ScrollableActionTable:
                 action_type="",
                 css="",
                 html_attribute="",
-                failed_reason="",
+                failed_reason=DEFAULT_FAILED_RESULT,
                 value="",
             ),
             # action_index=len(self.rows),
