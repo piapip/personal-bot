@@ -181,7 +181,9 @@ class Template:
 
             for action in actions:
                 # Closure problem with python...
-                self.action_table.addHistoryActionRow(action=Action(**action))
+                pre_migrated_action = Action(**action)
+                pre_migrated_action.updateName()
+                self.action_table.addHistoryActionRow(action=pre_migrated_action)
         except FileNotFoundError:
             pass
         except Exception as e:
@@ -253,21 +255,21 @@ class TabTemplates:
         self.rename_button = tk.Button(master=self.top_frame, text="Rename", width="6", command=self.__onRenameTab)
         self.rename_button.pack(side=tk.LEFT)
 
-        debug_button_text = tk.StringVar()
-        debug_button_text.set("Start Debug")
-        self.debug_button = tk.Button(master=self.top_frame, textvariable=debug_button_text, width="10")
-        self.debug_button.pack(side=tk.RIGHT)
-        def enableDebug():
-            self.driver.high_light_mode = True
-            debug_button_text.set("Stop Debug")
-            self.debug_button.configure(background="#c3ffb4", command=stopDebug)
+        # debug_button_text = tk.StringVar()
+        # debug_button_text.set("Start Debug")
+        # self.debug_button = tk.Button(master=self.top_frame, textvariable=debug_button_text, width="10")
+        # self.debug_button.pack(side=tk.RIGHT)
+        # def enableDebug():
+        #     self.driver.high_light_mode = True
+        #     debug_button_text.set("Stop Debug")
+        #     self.debug_button.configure(background="#c3ffb4", command=stopDebug)
 
-        def stopDebug():
-            self.driver.high_light_mode = False
-            debug_button_text.set("Start Debug")
-            self.debug_button.configure(background="SystemButtonFace", command=enableDebug)
+        # def stopDebug():
+        #     self.driver.high_light_mode = False
+        #     debug_button_text.set("Start Debug")
+        #     self.debug_button.configure(background="SystemButtonFace", command=enableDebug)
         
-        self.debug_button.configure(command=enableDebug)
+        # self.debug_button.configure(command=enableDebug)
 
         # self.export_button = tk.Button(master=self.top_frame, text="Export", width="6")
         # self.export_button.pack(side=tk.RIGHT)
@@ -384,3 +386,7 @@ class TabTemplates:
             self.template_tabs_control.add(child=template.main_ui, text=template.name)
             self.templates.append(template)
 
+            # After loading, save all to commit all the change for the migration.
+            # This step can be removed after everyone has moved to the new version.
+            print("Saving for migration")
+            self.__saveAll()

@@ -7,13 +7,21 @@ from configs.ui_configs import DEFAULT_FAILED_RESULT
 from helpers.action import sleepWithLog
 
 class ActionType(StrEnum):
-    TEXT_INPUT = "Text input"
+    OLD_TEXT_INPUT = "Text input"
+    OLD_CLICK_BY_NAME = "Click by name"
+    OLD_CLICK_BY_SELECTOR = "Click by selector"
+    OLD_CLICK_BY_VALUE = "Click by value"
+    OLD_SELECT_DROPDOWN = "Select dropdown"
+    OLD_SWITCH_TAB = "Switch tab"
+    OLD_SLEEP = "Sleep"
+
+    TEXT_INPUT = "Input"
     CLICK_BY_NAME = "Click by name"
-    CLICK_BY_SELECTOR = "Click by selector"
-    CLICK_BY_VALUE = "Click by value"
-    SELECT_DROPDOWN = "Select dropdown"
+    CLICK_BY_SELECTOR = "Click"
+    CLICK_BY_VALUE = "Click by Value"
+    SELECT_DROPDOWN = "Select"
     SWITCH_TAB = "Switch tab"
-    SLEEP = "Sleep"
+    SLEEP = "Wait"
 
 class Action:
     def __init__(
@@ -194,3 +202,21 @@ class Action:
     def encode(self):
         return self.__dict__
 
+
+    # Update the new used in the app to match with the name in RPA.
+    def updateName(self):
+        match self.action_type:
+            case ActionType.OLD_TEXT_INPUT:
+                self.action_type = ActionType.TEXT_INPUT
+            case ActionType.OLD_CLICK_BY_NAME:
+                self.action_type = ActionType.CLICK_BY_NAME
+            case ActionType.OLD_CLICK_BY_SELECTOR:
+                self.action_type = ActionType.CLICK_BY_SELECTOR
+            case ActionType.OLD_CLICK_BY_VALUE:
+                self.action_type = ActionType.CLICK_BY_VALUE
+            case ActionType.OLD_SELECT_DROPDOWN:
+                self.action_type = ActionType.SELECT_DROPDOWN
+            case ActionType.OLD_SWITCH_TAB:
+                self.action_type = ActionType.SWITCH_TAB
+            case ActionType.OLD_SLEEP:
+                self.action_type = ActionType.SLEEP
