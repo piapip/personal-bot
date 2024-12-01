@@ -20,6 +20,7 @@ class ResultText(StrEnum):
 DEFAULT_FAILED_RESULT = "not execute yet!"
 ################################################
 # PROGRESS BACKGROUND COLOR
+SYSTEM_DEFAULT_COLOR = "SystemButtonFace"
 IN_PROGRESS_BG_COLOR = "#f3e96c"
 FAILED_BG_COLOR = "#f13c1c"
 SUCCESS_BG_COLOR = "#3af40d"

@@ -4,12 +4,13 @@ from orm.ui import UI
 # from helpers.action import sleepWithLog
 
 driver = Driver(dry_run=False, high_light_mode=False)
+# driver = Driver(dry_run=True, high_light_mode=False)
 
 # # Test "Click by attribute"
 # driver.switchTab(0)
-# driver.goto("https://stackoverflow.com/questions/30324760/how-to-get-an-attribute-of-an-element-from-selenium")
+driver.goto("https://stackoverflow.com/questions/30324760/how-to-get-an-attribute-of-an-element-from-selenium")
 # sleep(1)
-# driver.switchTab(0)
+driver.switchTab(0)
 # driver.clickByAttribute(
 #     selector="#answers > div",
 #     attribute="itemprop",
